@@ -1,0 +1,73 @@
+<html>
+  <head>
+    <title>Pomidori</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <nav>
+      <img
+        src="src/logofull.png"
+        alt="logo"
+        width="300px"
+        onclick="window.location.href = 'index.html'"
+      />
+      <ul>
+        <li><a href="/index.html">Home</a></li>
+        <li><a href="/app.html">App</a></li>
+      </ul>
+    </nav>
+    <div class="app-container">
+      <h1>Pomodoro</h1>
+      <p>Press start to begin</p>
+      <div class="app-circle">
+        <svg class="progress-ring" viewBox="0 0 400 400">
+          <circle
+            class="progress-ring__circle"
+            stroke="#f08bb4"
+            stroke-width="8"
+            fill="rgb(255, 255, 255, 0.7)"
+            r="190"
+            cx="200"
+            cy="200"
+          />
+          <text
+            x="200"
+            y="200"
+            class="timer-text"
+            text-anchor="middle"
+            dominant-baseline="middle"
+          >
+            <tspan class="minutes">25</tspan>
+            :
+            <tspan class="seconds">00</tspan>
+          </text>
+        </svg>
+      </div>
+      <div class="btn-div">
+        <a class="btn-reset">Reset</a>
+        <a class="btn-start">Start</a>
+        <a class="btn-settings">Settings</a>
+      </div>
+    </div>
+
+    <footer>
+      <div>
+        <img src="src/logofull.png" alt="logo" width="200px" />
+        <p>The ultimate productivity tool</p>
+      </div>
+      <div>
+        <ul>
+          <li><a href="/index.html">Home</a></li>
+          <li><a href="/app.html">App</a></li>
+        </ul>
+      </div>
+    </footer>
+    <p>&copy; 2026 Pomidori • Made by essential</p>
+    <script src="script.js"></script>
+  </body>
+</html>
