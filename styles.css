@@ -285,16 +285,45 @@ footer ul {
     font-size: 1.2rem;
   }
 
+  hero h1 {
+    font-size: 2.2rem;
+  }
+
+  hero p {
+    font-size: 1rem;
+  }
+
+  card {
+    width: 14rem;
+    padding: 1.5rem;
+  }
+
+  card h2 {
+    font-size: 1.5rem;
+  }
+
+  card p {
+    font-size: 0.95rem;
+  }
+
   about {
-    flex-direction: column;
+    flex-direction: row;
     min-width: unset;
     width: calc(100% - 4rem);
     padding: 2rem;
     gap: 2rem;
   }
 
+  about h2 {
+    font-size: 1.8rem;
+  }
+
+  about p {
+    font-size: 1rem;
+  }
+
   about img {
-    width: 300px !important;
+    width: 250px !important;
   }
 
   footer {
