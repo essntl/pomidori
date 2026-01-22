@@ -11,8 +11,18 @@
   <body>
     <nav>
       <div class="logo-container" onclick="window.location.href = 'index.html'">
-        <img class="logo-light" src="src/logofull.png" alt="logo" width="250px" />
-        <img class="logo-dark" src="src/darklogofull.png" alt="logo" width="250px" />
+        <img
+          class="logo-light"
+          src="src/logofull.png"
+          alt="logo"
+          width="250px"
+        />
+        <img
+          class="logo-dark"
+          src="src/darklogofull.png"
+          alt="logo"
+          width="250px"
+        />
       </div>
       <ul>
         <li><a href="index.html">Home</a></li>
@@ -37,22 +47,57 @@
           <!-- Candle -->
           <g class="candle" transform="translate(200, 280)">
             <!-- Candle body -->
-            <rect x="-15" y="-60" width="30" height="60" fill="#f8e5d5" rx="3"/>
+            <rect
+              x="-15"
+              y="-60"
+              width="30"
+              height="60"
+              fill="#f8e5d5"
+              rx="3"
+            />
             <!-- Candle shadow/dimension -->
-            <rect x="-12" y="-60" width="24" height="60" fill="#ffe8d6" rx="2"/>
+            <rect
+              x="-12"
+              y="-60"
+              width="24"
+              height="60"
+              fill="#ffe8d6"
+              rx="2"
+            />
             <!-- Wick -->
-            <rect x="-1.5" y="-65" width="3" height="8" fill="#2c2c2c"/>
+            <rect x="-1.5" y="-65" width="3" height="8" fill="#2c2c2c" />
 
             <!-- Flame -->
             <g class="flame">
               <!-- Outer flame -->
-              <ellipse cx="0" cy="-68" rx="8" ry="12" fill="#ff6b35" opacity="0.8"/>
+              <ellipse
+                cx="0"
+                cy="-68"
+                rx="8"
+                ry="12"
+                fill="#ff6b35"
+                opacity="0.8"
+              />
               <!-- Middle flame -->
-              <ellipse cx="0" cy="-68" rx="5" ry="9" fill="#ffaa00" opacity="0.9"/>
+              <ellipse
+                cx="0"
+                cy="-68"
+                rx="5"
+                ry="9"
+                fill="#ffaa00"
+                opacity="0.9"
+              />
               <!-- Inner flame -->
-              <ellipse cx="0" cy="-67" rx="3" ry="6" fill="#fff4a3"/>
+              <ellipse cx="0" cy="-67" rx="3" ry="6" fill="#fff4a3" />
               <!-- Flame glow -->
-              <ellipse cx="0" cy="-68" rx="12" ry="16" fill="#ff6b35" opacity="0.2"/>
+              <ellipse
+                cx="0"
+                cy="-68"
+                rx="12"
+                ry="16"
+                fill="#ff6b35"
+                opacity="0.2"
+              />
             </g>
           </g>
 
@@ -63,6 +108,8 @@
             text-anchor="middle"
             dominant-baseline="middle"
           >
+            <tspan class="hours">00</tspan>
+            :
             <tspan class="minutes">25</tspan>
             :
             <tspan class="seconds">00</tspan>
@@ -79,8 +126,18 @@
     <footer>
       <div>
         <div class="logo-container">
-          <img class="logo-light" src="src/logofull.png" alt="logo" width="200px" />
-          <img class="logo-dark" src="src/darklogofull.png" alt="logo" width="200px" />
+          <img
+            class="logo-light"
+            src="src/logofull.png"
+            alt="logo"
+            width="200px"
+          />
+          <img
+            class="logo-dark"
+            src="src/darklogofull.png"
+            alt="logo"
+            width="200px"
+          />
         </div>
         <p>The ultimate productivity tool</p>
       </div>
@@ -91,8 +148,7 @@
         </ul>
       </div>
     </footer>
-    <script src="script.js"></script>
-    <!-- <div class="modal-overlay">
+    <div class="modal-overlay">
       <div class="modal-settings">
         <span class="close-button">&times;</span>
         <h2>Settings</h2>
@@ -112,6 +168,7 @@
         </div>
         <button class="save-settings">Save Settings</button>
       </div>
-    </div> -->
+    </div>
+    <script src="script.js"></script>
   </body>
 </html>

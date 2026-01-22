@@ -249,6 +249,10 @@ footer ul {
   gap: 3rem;
 }
 
+footer ul li {
+  transition: all 0.3s ease-in-out;
+}
+
 @keyframes jump {
   0%, 100% {
     transform: translateY(0);
@@ -370,6 +374,7 @@ body.lit .btn-div a:hover {
   height: 100%;
   background: rgba(0, 0, 0, 0.4);
   z-index: 999;
+  display: none;
 }
 
 
@@ -377,13 +382,68 @@ body.lit .btn-div a:hover {
   position: fixed;
   top: 50%;
   left: 50%;
+  padding: 2rem;
   transform: translate(-50%, -50%);
   background: #fff;
-  padding: 2rem;
   border-radius: 1rem;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   z-index: 1000;
+  min-width: 25%;
+  min-height: 25%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
 }
+
+.modal-settings h2 {
+  margin-top: 0;
+  text-align: center;
+  display: inline-block;
+  font-size: 2rem;
+}
+
+.modal-settings label {
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.modal-settings input {
+  width: 60px;
+  padding: 0.4rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+.modal-settings button {
+  padding: 0.6rem 1.2rem;
+  background-color: #f08bb4;
+  color: #fff;
+  border: none;
+  border-radius: 1rem;
+  font-size: 1.15rem;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+}
+
+.modal-settings button:hover {
+  scale: (1.05);
+}
+
+.modal-settings .close-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+
 
 
 
