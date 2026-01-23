@@ -37,7 +37,7 @@
         </ul>
         <div class="dark-toggle-div">
           <label>
-            <input name="darkModeToggle" type="checkbox" />
+            <input name="darkModeToggle" type="checkbox" onclick="new Audio('/media/toggle.mp3').play()" />
             <span class="slider"></span>
           </label>
         </div>
@@ -131,18 +131,19 @@
           <text
             x="200"
             y="280"
-            class="timer-status"
             text-anchor="middle"
             dominant-baseline="middle"
           >
-            <tspan>Idle</tspan>
+            <tspan class="timer-status">Idle</tspan>
+            -
+            <tspan class="cycle-count">Cycle 1/2</tspan>
           </text>
         </svg>
       </div>
       <div class="btn-div">
-        <a class="btn-reset">Reset</a>
-        <a class="btn-start">Start</a>
-        <a class="btn-settings">Settings</a>
+        <a class="btn-reset" onclick="new Audio('/media/reset.mp3').play()">Reset</a>
+        <a class="btn-start" onclick="new Audio('/media/start.mp3').play()">Start</a>
+        <a class="btn-settings" onclick="new Audio('button.mp3').play()">Settings</a>
       </div>
     </div>
 
@@ -190,7 +191,7 @@
           <input type="number" id="break-duration" min="1" max="60" value="5" />
         </div>
         <div class="settings-option">
-          <label for="cycle-count">Cycle count (Work + Break) :</label>
+          <label for="cycle-count">Cycle count (Work + Break):</label>
           <input type="number" id="cycle-count" min="1" max="60" value="1" />
         </div>
         <button class="save-settings">Save Settings</button>

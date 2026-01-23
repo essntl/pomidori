@@ -6,6 +6,7 @@ const timeHours = document.querySelector(".hours");
 const timeMinutes = document.querySelector(".minutes");
 const timeSeconds = document.querySelector(".seconds");
 const statusIndicator = document.querySelector(".timer-status");
+const cycleIndicator = document.querySelector(".cycle-count")
 //timer settings modal variables
 const modalOverlay = document.querySelector(".modal-overlay");
 const modalSettings = document.querySelector(".modal-settings");
@@ -31,7 +32,8 @@ let initialTimeMinutes = timeMinutes.textContent;
 let initialTimeSeconds = timeSeconds.textContent;
 let workDuration = 25;
 let breakDuration = 5;
-let cycleCount = 1;
+let currentCycle = 1;
+let totalCycles = 2;
 
 // Set initial stroke dasharray and dashoffset for the progress circle
 circle.style.strokeDasharray = `${circumference} ${circumference}`;
@@ -80,7 +82,8 @@ function closeSettings() {
 function saveSettings() {
   workDuration = Number.parseInt(workDurationInput.value);
   breakDuration = Number.parseInt(breakDurationInput.value);
-  cycleCount = Number.parseInt(cycleCountInput.value);
+  totalCycles = Number.parseInt(cycleCountInput.value);
+  currentCycle = 1;
   if (
     isNaN(workDuration) ||
     workDuration <= 0 ||
@@ -101,6 +104,7 @@ function saveSettings() {
   timeHours.textContent = hours < 10 ? "0" + hours : hours;
   timeMinutes.textContent = minutes < 10 ? "0" + minutes : minutes;
   timeSeconds.textContent = "00";
+  cycleIndicator.textContent = "Cycle " + currentCycle + "/" + totalCycles;
   initialTimeHours = timeHours.textContent;
   initialTimeMinutes = timeMinutes.textContent;
   initialTimeSeconds = timeSeconds.textContent;
@@ -148,15 +152,16 @@ function appTimer() {
 
       //timer end condition
       if (minutesLeft === 0 && secondsLeft === 0) {
-        if (cycleCount > 0) {
+        if (currentCycle <= totalCycles) {
           if (workMode) {
             workMode = false;
             breakMode = true;
             sessionLength = breakDuration * 60;
             totalTime = sessionLength;
             timerStatus()
-            cycleCount--;
+            currentCycle++;
           } else {
+            cycleIndicator.textContent = "Cycle " + currentCycle + "/" + totalCycles;
             workMode = true;
             breakMode = false;
             sessionLength = workDuration * 60;
@@ -171,6 +176,8 @@ function appTimer() {
           timeHours.textContent = initialTimeHours;
           timeMinutes.textContent = initialTimeMinutes;
           timeSeconds.textContent = initialTimeSeconds;
+          currentCycle = 1;
+          cycleIndicator.textContent = "Cycle 1/" + totalCycles;
           styleChange();
           setProgress(0);
         }
@@ -196,6 +203,7 @@ function resetTimer() {
     workMode = true;
     totalTime = 0;
     sessionLength = 0;
+    currentCycle = 1;
     styleChange();
     setProgress(0);
     timeHours.textContent = initialTimeHours;

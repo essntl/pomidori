@@ -480,7 +480,7 @@ body.lit .btn-div {
 
 .btn-div a {
   padding: 0.75rem 1.5rem;
-  background-color: rgba(224, 130, 202, 0.8);
+  background-color: #FF9793;
   color: #fff;
   text-decoration: none;
   border-radius: 1rem;
@@ -572,7 +572,7 @@ body.dark-mode .modal-settings label {
 
 .modal-settings button {
   padding: 0.6rem 1.2rem;
-  background-color: #f08bb4;
+  background-color: #FF9793;
   color: #fff;
   border: none;
   border-radius: 1rem;
@@ -582,7 +582,7 @@ body.dark-mode .modal-settings label {
 }
 
 body.dark-mode .modal-settings button {
-  background-color: #a83664;
+  background-color: #FF9793;
 }
 
 
