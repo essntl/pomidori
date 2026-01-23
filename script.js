@@ -5,7 +5,7 @@ const resetBtn = document.querySelector(".btn-reset");
 const timeHours = document.querySelector(".hours");
 const timeMinutes = document.querySelector(".minutes");
 const timeSeconds = document.querySelector(".seconds");
-const statusIndicator = document.querySelector(".timer-status")
+const statusIndicator = document.querySelector(".timer-status");
 //timer settings modal variables
 const modalOverlay = document.querySelector(".modal-overlay");
 const modalSettings = document.querySelector(".modal-settings");
@@ -13,6 +13,7 @@ const closeButton = document.querySelector(".close-button");
 const saveSettingsButton = document.querySelector(".save-settings");
 const workDurationInput = document.querySelector("#work-duration");
 const breakDurationInput = document.querySelector("#break-duration");
+const cycleCountInput = document.querySelector("#cycle-count");
 //variables for circle progress bar
 const circle = document.querySelector(".progress-ring__circle");
 const radius = circle.r.baseVal.value;
@@ -20,6 +21,7 @@ const circumference = 2 * Math.PI * radius;
 //timer state variables
 let isPaused = false;
 let workMode = true;
+let breakMode = false;
 let totalTime = 0;
 let sessionLength = 0;
 let myInterval;
@@ -29,6 +31,7 @@ let initialTimeMinutes = timeMinutes.textContent;
 let initialTimeSeconds = timeSeconds.textContent;
 let workDuration = 25;
 let breakDuration = 5;
+let cycleCount = 1;
 
 // Set initial stroke dasharray and dashoffset for the progress circle
 circle.style.strokeDasharray = `${circumference} ${circumference}`;
@@ -41,17 +44,16 @@ function setProgress(percent) {
 }
 
 function timerStatus() {
-  if(!state && !isPaused) {
-    statusIndicator.textContent = "Idle"
-  } else if (state) {
-    statusIndicator.textContent = "Working"
+  if (!state && !isPaused) {
+    statusIndicator.textContent = "Idle";
+  } else if (workMode && !breakMode) {
+    statusIndicator.textContent = "Working";
   } else if (isPaused) {
-    statusIndicator.textContent = "Paused"
+    statusIndicator.textContent = "Paused";
+  } else if (breakMode) {
+    statusIndicator.textContent = "Break";
   }
 }
-
-
-
 
 //change style from idle to running timer.
 function styleChange() {
@@ -78,6 +80,7 @@ function closeSettings() {
 function saveSettings() {
   workDuration = Number.parseInt(workDurationInput.value);
   breakDuration = Number.parseInt(breakDurationInput.value);
+  cycleCount = Number.parseInt(cycleCountInput.value);
   if (
     isNaN(workDuration) ||
     workDuration <= 0 ||
@@ -111,14 +114,14 @@ function appTimer() {
   if (sessionLength === 0) {
     sessionLength = workDuration * 60;
   }
-  
+
   //set total time for progress calculation
   if (totalTime === 0) {
     totalTime = sessionLength;
   }
 
-  if (!isPaused) {
-    isWorkMode = true;
+  if (isPaused) {
+    workMode = true;
   }
   isPaused = false;
   //start the countdown loop
@@ -145,10 +148,21 @@ function appTimer() {
 
       //timer end condition
       if (minutesLeft === 0 && secondsLeft === 0) {
-        if (workMode) {
-          workMode = false;
-          sessionLength = breakDuration * 60;
-          totalTime = sessionLength;
+        if (cycleCount > 0) {
+          if (workMode) {
+            workMode = false;
+            breakMode = true;
+            sessionLength = breakDuration * 60;
+            totalTime = sessionLength;
+            timerStatus()
+            cycleCount--;
+          } else {
+            workMode = true;
+            breakMode = false;
+            sessionLength = workDuration * 60;
+            totalTime = sessionLength;
+            timerStatus()
+          }
         } else {
           clearInterval(myInterval);
           workMode = true;
@@ -163,8 +177,10 @@ function appTimer() {
       }
     };
     myInterval = setInterval(updateTimer, 1000);
-  } else {   //state when timer is paused. Sets button text and sets the pause state
+  } else {
+    //state when timer is paused. Sets button text and sets the pause state
     state = false;
+    workMode = false;
     isPaused = true;
     clearInterval(myInterval);
     startBtn.textContent = "Resume";
