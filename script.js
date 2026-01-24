@@ -91,7 +91,7 @@ function saveSettings() {
   const breakDur = Number(breakDurationInput.value);
   const loops = Number(loopCountInput.value);
   
-  if (work < 1 || work > 360 || breakDur < 1 || breakDur > 360) {
+  if (work < 1 || work > 360 || breakDur < 1 || breakDur > 360 || loops < 1 || loops > 15) {
     alert("Please enter valid work (max 360 min) and break (max 60 min) durations along with a loop count between 1-15.");
     return;
   }
