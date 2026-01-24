@@ -424,22 +424,26 @@ input:checked + .slider:before {
 }
 
 .ambient-toggle-container {
+  width: full;
   display: flex;
-  flex-direction: row;
+  flex-wrap: wrap;
   gap: 1rem;
   background: rgba(123, 73, 100, 0.2);
   padding: 1rem;
   border-radius: 1rem;
-
+  justify-content: center;
 }
 
 .ambient-toggle-container button {
   display: flex;
   flex-direction: column;
-  padding: 2rem;
+  padding: 0.25rem;
   border-radius: 1rem;
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
   background-color: #ecd6c4;
+  justify-content: center;
+  min-height: 8rem;
+  min-width: 8rem;
 }
 
 .notes-container {
@@ -480,7 +484,7 @@ input:checked + .slider:before {
 
 #add-note-btn {
   padding: 0.75rem 1.5rem;
-  background-color: #FF9793;
+  background-color: #ff9793;
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -625,7 +629,7 @@ body.lit .btn-div {
 
 .btn-div a {
   padding: 0.75rem 1.5rem;
-  background-color: #FF9793;
+  background-color: #ff9793;
   color: #fff;
   text-decoration: none;
   border-radius: 1rem;
@@ -717,7 +721,7 @@ body.dark-mode .modal-settings label {
 
 .modal-settings button {
   padding: 0.6rem 1.2rem;
-  background-color: #FF9793;
+  background-color: #ff9793;
   color: #fff;
   border: none;
   border-radius: 1rem;
@@ -727,9 +731,8 @@ body.dark-mode .modal-settings label {
 }
 
 body.dark-mode .modal-settings button {
-  background-color: #FF9793;
+  background-color: #ff9793;
 }
-
 
 .modal-settings button:hover {
   scale: (1.05);
@@ -776,42 +779,6 @@ body.dark-mode .modal-settings button {
   }
 }
 
-/* WORK IN PROGRESS PART OF CALENDAR AND NOTES SECTIONS */
-.container-calendar-notes {
-  background: rgba(248, 180, 217, 0.2);
-  display: flex;
-  flex-direction: row;
-  gap: 4rem;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 6rem;
-  margin-bottom: 4rem;
-  background-color: rgba(255, 211, 211, 0.2);
-  padding: 2rem 4rem;
-  border-radius: 2rem;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
-  min-width: 82.5vh;
-}
-
-.calendar-container {
-  width: 30%;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-}
-
-.notes-container {
-  width: 70%;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-}
-
-.calendar {
-  background-color: #0a0a0a;
-  width: 100%;
-  height: 100%;
-}
 
 /* Responsive Design */
 
@@ -899,8 +866,34 @@ body.dark-mode .modal-settings button {
     align-items: center;
   }
 
+  .sound-container {
+    width: 100%;
+    background: rgba(248, 180, 217, 0.2);
+    padding: 2rem;
+    border-radius: 2rem;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
+    transition: all 1s ease-in-out;
+  }
 
+  .sound-container h1 {
+    text-align: center;
+  }
 
+  .ambient-toggle-container {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .ambient-toggle-container button {
+    flex-direction: column;
+    padding: 0.25rem;
+    justify-content: center;
+    min-height: 5rem;
+    min-width: 5rem;
+  }
+  .notes-container {
+  width: 100%;
+}
 }
 
 /* ========== MOBILE (below 768px) ========== */
@@ -1024,6 +1017,10 @@ body.dark-mode .modal-settings button {
     margin-bottom: 2rem;
   }
 
+  .timer-container {
+    width: 100%;
+  }
+
   .timer-container h1 {
     font-size: 2.5rem;
   }
@@ -1060,6 +1057,37 @@ body.dark-mode .modal-settings button {
 
   .modal-settings {
     min-width: 70%;
+  }
+
+  .sound-container {
+    width: 100%;
+    background: rgba(248, 180, 217, 0.2);
+    padding: 2rem;
+    border-radius: 2rem;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
+    transition: all 1s ease-in-out;
+  }
+
+  .sound-container h1 {
+    text-align: center;
+  }
+
+  .ambient-toggle-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .ambient-toggle-container button {
+    display: flex;
+    flex-direction: column;
+    padding: 0.25rem;
+    border-radius: 1rem;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
+    background-color: #ecd6c4;
+    justify-content: center;
+    min-height: 5rem;
+    min-width: 5rem;
   }
 }
 
