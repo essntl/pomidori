@@ -400,10 +400,10 @@ input:checked + .slider:before {
   display: flex;
   flex-direction: row;
   justify-content: center;
-  align-items: flex-start;
   margin: 0 1rem 1rem;
   gap: 1rem;
   align-items: stretch;
+  width: calc(100% - 2rem);
 }
 
 .tool-container {
