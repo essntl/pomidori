@@ -11,7 +11,7 @@ Pomidori is a passion project to create a platform for productivity tools like P
 - 📅 Calendar (coming soon)
 
 ## Stack
-Built with vanilla HTML, CSS, and JavaScript. Might migrate to a framework down the road, but keeping it simple for now.
+Built with React (Vite) with TailwindCSS
 
 ## Philosophy
 Open-source, user-experience first, free forever.
