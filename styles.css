@@ -520,6 +520,8 @@ body.lit .ambient-toggle-container button.active {
   padding: 2rem;
   border-radius: 1rem;
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
+  overflow: scroll;
+  max-height: 700px;
   transition: all 1s ease-in-out;
 }
 
