@@ -10,19 +10,19 @@ function Footer() {
           src="src/assets/images/logofull.png"
           alt="logo"
           width="200px"
-          className={`block transition-opacity duration-500 ${isDarkMode ? "opacity-0" : "opacity-100"}
+          className={`block transition-opacity duration-500 opacity-100 dark:opacity-0
         `}
         />
         <img
           src="src/assets/images/darklogofull.png"
           alt="logo"
           width="200px"
-          className={`absolute top-0 left-0 transition-opacity duration-500 ${isDarkMode ? "opacity-100" : "opacity-0"}
+          className={`absolute top-0 left-0 transition-opacity duration-500 opacity-0 dark:opacity-100
         `}
         />
       </div>
       <div className="flex items-center gap-4 pr-8">
-        <ul className="flex gap-8 text-lg">
+        <ul className="flex gap-8 text-lg dark:text-gray-200">
           <li>
             <a
               className="inline-block hover:scale-110 duration-300 transition-all"
