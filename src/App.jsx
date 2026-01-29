@@ -1,12 +1,16 @@
 import { useState } from 'react'
+import Navbar from "../src/components/layout/Navbar"
+import Footer from './components/layout/Footer'
 
 function App() {
   return (
-    <>
-      <body class="bg-amber-200">
+    <div className="bg-amber-200 min-h-screen flex flex-col">
+      <Navbar />
+      <main className='flex-1'>
         
-      </body>
-    </>
+      </main>
+      <Footer / >
+    </div>
   )
 }
 

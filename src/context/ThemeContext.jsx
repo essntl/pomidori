@@ -1,6 +1,5 @@
 import { createContext, useEffect, useState } from "react";
 import toggleSound from "../assets/sounds/toggle.mp3";
-import { is } from "@babel/types";
 
 export const ThemeContext = createContext(null);
 export function ThemeProvider({children}) {
@@ -17,8 +16,8 @@ export function ThemeProvider({children}) {
         const sound = new Audio(toggleSound);
         sound.play();
 
-        SetIsDarkMode(PrevValue => {
-            newValue = !PrevValue
+        setIsDarkMode(PrevValue => {
+            let newValue = !PrevValue
             localStorage.setItem("darkMode", newValue);
             return newValue;
         })
