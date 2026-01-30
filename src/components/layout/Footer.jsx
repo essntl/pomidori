@@ -4,7 +4,7 @@ import { useContext } from "react";
 function Footer() {
   const { isDarkMode } = useContext(ThemeContext);
   return (
-    <div className="flex justify-between items-center bg-white/50 m-4 p-4 rounded-xl flex-row">
+    <div className="flex justify-between items-center bg-white/50 dark:bg-gray-950/30 m-4 p-4 rounded-xl flex-row">
       <div className="relative inline-block cursor-pointer" >
         <img
           src="src/assets/images/logofull.png"

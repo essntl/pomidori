@@ -2,7 +2,7 @@ import DarkModeToggle from "../ui/DarkModeToggle";
 
 function Navbar() {
   return (
-    <div className="flex justify-between items-center bg-white/50 m-4 p-6 rounded-xl flex-row shadow-xl">
+    <div className="flex justify-between items-center bg-white/50 dark:bg-gray-800/30 m-4 p-6 rounded-xl flex-row shadow-xl">
       <div className="relative inline-block cursor-pointer">
         <img
           src="src/assets/images/logofull.png"
