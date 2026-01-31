@@ -19,7 +19,7 @@ function Navbar() {
         `}
         />
       </div>
-      <div className="flex items-center pl-8 gap-4 md:gap-10">
+      <div className="flex items-center pl-8 gap-4 md:gap-8">
         <ul className="flex gap-4 text-lg dark:text-gray-200">
           <li>
             <a
