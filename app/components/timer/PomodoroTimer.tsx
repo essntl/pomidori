@@ -1,13 +1,12 @@
 "use client";
 
-import TimerCircle from "./TimerCircle";
 import TimerControls from "./TimerControls";
+import TimerDisplay from "./TimerDisplay";
 
 function PomodoroTimer() {
   return (
-    <div className="flex lg:flex-3 lg:max-w-[30%] flex-col m-4 p-6 bg-white/50 dark:bg-gray-800/30 rounded-xl shadow-xl gap-2">
-      <h1 className="text-3xl font-bold dark:text-white">Timer</h1>
-      <TimerCircle />
+    <div className="flex lg:flex-3 lg:max-w-[30%] m-4 py-4 flex-col justify-center bg-white/70 dark:bg-gray-900/60 rounded-3xl shadow-lg dark:shadow-xl border border-white/60 dark:border-white/10">
+      <TimerDisplay />
       <TimerControls />
     </div>
   );
