@@ -25,8 +25,8 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.15,
+      staggerChildren: 0.1,
+      delayChildren: 0.3,
     },
   },
 };
@@ -70,7 +70,7 @@ function Overlay({ isOpen, onClose }: OverlayProps) {
             initial={{ y: "-100%" }}
             animate={{ y: 0 }}
             exit={{ y: "-100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            transition={{ type: "spring", damping: 30, stiffness: 200 }}
             className="fixed inset-0 w-full h-full flex z-50 overflow-hidden pointer-events-none"
           >
             <motion.div
