@@ -61,7 +61,7 @@ function Overlay({ isOpen, onClose }: OverlayProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
-            className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-md z-40"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40"
             onClick={onClose}
           />
           
@@ -83,7 +83,7 @@ function Overlay({ isOpen, onClose }: OverlayProps) {
               <motion.div variants={itemVariants} className="flex justify-end px-5 pt-4">
                 <button
                   onClick={onClose}
-                  className="rounded-full w-8 h-8 flex items-center justify-center bg-white/10 dark:bg-white/10 text-black/70 dark:text-white/70 hover:bg-white/40 dark:hover:bg-white/20 transition-colors text-lg"
+                  className="rounded-xl w-8 h-8 flex items-center justify-center bg-white/10 dark:bg-white/10 text-white/70 hover:bg-white/40 dark:hover:bg-white/20 transition-colors text-lg"
                   aria-label="Close overlay"
                 >
                   ✕
@@ -102,7 +102,7 @@ function Overlay({ isOpen, onClose }: OverlayProps) {
                       <Link
                         href={item.href}
                         onClick={onClose}
-                        className="block rounded-2xl px-4 py-3 text-sm font-medium bg-white/20 dark:bg-white/10 text-black/80 dark:text-white/80 hover:bg-white/40 dark:hover:bg-white/20 transition-colors text-left backdrop-blur-sm"
+                        className="block rounded-2xl px-4 py-3 text-sm font-medium bg-white/20 dark:bg-white/10 text-white/80 hover:bg-white/40 dark:hover:bg-white/20 transition-colors text-left"
                       >
                         {item.label}
                       </Link>
@@ -115,19 +115,19 @@ function Overlay({ isOpen, onClose }: OverlayProps) {
                   {/* Music widget placeholder */}
                   <motion.section
                     variants={itemVariants}
-                    className="rounded-3xl bg-white/20 dark:bg-white/10 backdrop-blur-sm p-4 min-h-30 flex flex-col justify-between"
+                    className="rounded-3xl bg-white/20 dark:bg-white/10 p-4 min-h-30 flex flex-col justify-between"
                     aria-label="Music widget"
                   >
-                    <span className="text-xs font-semibold uppercase tracking-wider text-black/40 dark:text-white/40">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-white/40">
                       Now Playing
                     </span>
                     <div className="flex items-center gap-3 mt-auto">
                       <div className="w-10 h-10 rounded-lg bg-black/10 dark:bg-white/10" />
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-black/70 dark:text-white/70">
+                        <span className="text-sm font-medium text-white/70">
                           No track
                         </span>
-                        <span className="text-xs text-black/40 dark:text-white/40">
+                        <span className="text-xs text-white/40">
                           —
                         </span>
                       </div>
@@ -140,7 +140,7 @@ function Overlay({ isOpen, onClose }: OverlayProps) {
                     className="grid grid-cols-4 gap-3"
                     aria-label="Quick toggles"
                   >
-                    <motion.div variants={itemVariants} className="rounded-2x backdrop-blur-sm flex items-center justify-center aspect-square">
+                    <motion.div variants={itemVariants} className="rounded-2x flex items-center justify-center aspect-square">
                       <DarkModeToggle />
                     </motion.div>
                     <motion.div variants={itemVariants}>
@@ -167,7 +167,7 @@ function Overlay({ isOpen, onClose }: OverlayProps) {
 function TogglePlaceholder({ label }: { label: string }) {
   return (
     <button
-      className="w-full h-full rounded-2xl bg-white/20 dark:bg-white/10 backdrop-blur-sm p-3 flex flex-col items-center justify-center aspect-square text-black/50 dark:text-white/50 hover:bg-white/30 dark:hover:bg-white/20 transition-colors"
+      className="w-full h-full rounded-2xl bg-white/20 dark:bg-white/10 p-3 flex flex-col items-center justify-center aspect-square text-white/50 hover:bg-white/30 dark:hover:bg-white/20 transition-colors"
       aria-label={label}
     >
       <span className="text-xs font-medium">{label}</span>
