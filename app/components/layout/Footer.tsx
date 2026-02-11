@@ -1,28 +1,28 @@
 import Link from "next/link";
+import Image from "next/image";
 
 function Footer() {
   return (
-    <div className="flex justify-between items-center bg-white/50 dark:bg-gray-950/30 m-4 p-4 rounded-xl flex-col md:flex-row">
-      <div className="relative inline-block cursor-pointer">
-        <img
-          src="/images/logofull.png"
+    <footer className="flex justify-between items-center p-4">
+      <Link href="/" className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/70 dark:bg-gray-900/60 shadow-lg dark:shadow-xl border border-white/60 dark:border-white/10">
+        <Image
+          src="/images/logo.png"
           alt="logo"
-          width="200"
-          className="block transition-opacity duration-500 opacity-100 dark:opacity-0"
+          width="32"
+          height="32"
+          className="block"
         />
-        <img
-          src="/images/darklogofull.png"
-          alt="logo"
-          width="200"
-          className="absolute top-0 left-0 transition-opacity duration-500 opacity-0 dark:opacity-100"
-        />
-      </div>
-      <div className="flex items-center pl-4 gap-4 pr-8">
-        <ul className="flex gap-4 text-lg dark:text-gray-200">
+        <span className="text-lg font-semibold text-gray-800 dark:text-gray-100 hidden sm:block tracking-tight">
+          Pomidori
+        </span>
+      </Link>
 
-        </ul>
+      <div className="flex items-center gap-4 px-4 py-3 rounded-2xl bg-white/70 dark:bg-gray-900/60 shadow-lg dark:shadow-xl border border-white/60 dark:border-white/10">
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          Made by essential
+        </span>
       </div>
-    </div>
+    </footer>
   );
 }
 
