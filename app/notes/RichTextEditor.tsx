@@ -82,9 +82,11 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
         </ToolbarButton>
 
         <ToolbarButton onClick={() => insertMarkdown("*", "*")} title="Italic">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-          </svg>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <line x1="10" y1="4" x2="14" y2="4" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+            <line x1="8" y1="20" x2="12" y2="20" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+            <line x1="12" y1="4" x2="10" y2="20" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+            </svg>
         </ToolbarButton>
 
         <div className="w-px h-5 bg-gray-300 dark:bg-gray-700 mx-1" />
@@ -104,9 +106,10 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
         <div className="w-px h-5 bg-gray-300 dark:bg-gray-700 mx-1" />
 
         <ToolbarButton onClick={() => insertMarkdown("- [ ] ")} title="To-do item">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" rx="2" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+            </svg>
         </ToolbarButton>
 
 
