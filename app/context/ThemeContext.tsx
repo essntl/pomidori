@@ -20,14 +20,19 @@ type ThemeProviderProps = {
 };
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return document.documentElement.classList.contains("dark");
+    }
+    return false;
+  });
 
   useEffect(() => {
-    const savedPreference = localStorage.getItem("darkMode");
-    if (savedPreference === "true") {
-      setIsDarkMode(true);
-    }
-  }, []);
+    const root = document.documentElement;
+    root.classList.toggle("dark", isDarkMode);
+    root.style.colorScheme = isDarkMode ? "dark" : "light";
+    localStorage.setItem("darkMode", String(isDarkMode));
+  }, [isDarkMode]);
 
   function toggleDarkMode() {
     const sound = new Audio("/sounds/toggle.mp3");
@@ -51,6 +56,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     </ThemeContext.Provider>
   );
 }
+
 export function useTheme() {
   const ctx = useContext(ThemeContext);
   if (!ctx) {

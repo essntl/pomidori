@@ -14,13 +14,28 @@ export const metadata: Metadata = {
   description: "Productivity suite to suit all your needs.",
 };
 
+const themeScript = `
+  (function() {
+    const savedPreference = localStorage.getItem("darkMode");
+    const isDark = savedPreference === "true" || 
+      (!savedPreference && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    if (isDark) {
+      document.documentElement.classList.add("dark");
+      document.documentElement.style.colorScheme = "dark";
+    }
+  })();
+`;
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className={nunito.className}>
         <Providers>
           <div className="min-h-screen flex flex-col bg-linear-to-t from-[#bcbcbc] to-white dark:from-[#222222] dark:to-black transition-all">

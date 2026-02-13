@@ -62,7 +62,7 @@ function NotesPanel() {
   }
 
   return (
-    <div className="flex flex-1 gap-4 p-4 min-h-0">
+    <div className="flex flex-1 gap-2 px-4 py-2 min-h-0">
       {/* Sidebar - Note List */}
       <div
         className={`${
@@ -116,7 +116,7 @@ function NotesPanel() {
       <div
         className={`${
           selectedNote ? "flex min-h-[80vh] max-h-[80vh]" : "hidden md:flex"
-        } flex-1 flex-col bg-white/70 dark:bg-gray-900/60 rounded-2xl shadow-lg dark:shadow-xl border border-white/60 dark:border-white/10 overflow-hidden`}
+        } flex-1 flex-col bg-white/70 dark:bg-gray-900/60 rounded-2xl shadow-lg dark:shadow-xl border border-white/60 dark:border-white/10 overflow-hidden md:min-h-[80vh] md:max-h-[80vh]`}
       >
         {selectedNote ? (
           <>  

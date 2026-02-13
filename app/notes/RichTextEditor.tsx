@@ -394,8 +394,8 @@ export default function RichTextEditor({
             ref={textareaRef}
             value={content}
             onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder || "Start writing your notes..."}
-            className="w-full h-full min-h-50 p-4 bg-transparent dark:text-white resize-none outline-none font-mono text-sm leading-relaxed"
+            placeholder={placeholder || "Start writing your note..."}
+            className="w-full h-full min-h-50 p-4 bg-transparent dark:text-white resize-none outline-none"
           />
         )}
       </div>
