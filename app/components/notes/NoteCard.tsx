@@ -1,3 +1,5 @@
+"use client";
+
 import { Note } from "./NotesPanel";
 
 interface NoteCardProps {

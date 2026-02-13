@@ -115,7 +115,7 @@ function NotesPanel() {
       {/* Note Viewer/Editor */}
       <div
         className={`${
-          selectedNote ? "flex min-h-[60vh]" : "hidden md:flex"
+          selectedNote ? "flex min-h-[80vh] max-h-[80vh]" : "hidden md:flex"
         } flex-1 flex-col bg-white/70 dark:bg-gray-900/60 rounded-2xl shadow-lg dark:shadow-xl border border-white/60 dark:border-white/10 overflow-hidden`}
       >
         {selectedNote ? (

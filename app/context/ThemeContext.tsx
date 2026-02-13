@@ -32,7 +32,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   function toggleDarkMode() {
     const sound = new Audio("/sounds/toggle.mp3");
     sound.volume = 0.3;
-    sound.play();
+    sound.play().catch(() => {});
+    sound.addEventListener("ended", () => {
+      sound.removeAttribute("src");
+      sound.load();
+    });
 
     setIsDarkMode((prevValue) => {
       const newValue = !prevValue;
