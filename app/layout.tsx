@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./components/Providers";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
+import YouTubeAudioPlayer from "./components/sounds/YouTubeAudioPlayer";
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -42,6 +43,7 @@ export default function RootLayout({
             <Navbar />
             <main className="flex-1 flex lg:flex-row justify-center flex-col">
               {children}
+              <YouTubeAudioPlayer/>
             </main>
             <Footer />
           </div>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import DarkModeToggle from "../ui/DarkModeToggle";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type OverlayProps = {
@@ -64,7 +64,7 @@ function Overlay({ isOpen, onClose }: OverlayProps) {
             className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40"
             onClick={onClose}
           />
-          
+
           {/* panel slide top */}
           <motion.div
             initial={{ y: "-100%" }}
@@ -80,7 +80,10 @@ function Overlay({ isOpen, onClose }: OverlayProps) {
               className="ml-auto h-full w-full max-w-105 sm:max-w-120 md:max-w-130 flex flex-col overflow-hidden  pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <motion.div variants={itemVariants} className="flex justify-end px-5 pt-4">
+              <motion.div
+                variants={itemVariants}
+                className="flex justify-end px-5 pt-4"
+              >
                 <button
                   onClick={onClose}
                   className="rounded-xl w-8 h-8 flex items-center justify-center bg-white/10 dark:bg-white/10 text-white/70 hover:bg-white/40 dark:hover:bg-white/20 transition-colors text-lg"
@@ -89,7 +92,7 @@ function Overlay({ isOpen, onClose }: OverlayProps) {
                   ✕
                 </button>
               </motion.div>
-              
+
               <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 pb-6 pt-2 flex gap-3">
                 {/*navigation*/}
                 <motion.nav
@@ -109,9 +112,12 @@ function Overlay({ isOpen, onClose }: OverlayProps) {
                     </motion.div>
                   ))}
                 </motion.nav>
-                
+
                 {/*toggles and widgets col */}
-                <motion.div variants={itemVariants} className="flex-1 flex flex-col gap-3 min-w-0">
+                <motion.div
+                  variants={itemVariants}
+                  className="flex-1 flex flex-col gap-3 min-w-0"
+                >
                   {/* Music widget placeholder */}
                   <motion.section
                     variants={itemVariants}
@@ -127,20 +133,18 @@ function Overlay({ isOpen, onClose }: OverlayProps) {
                         <span className="text-sm font-medium text-white/70">
                           No track
                         </span>
-                        <span className="text-xs text-white/40">
-                          —
-                        </span>
+                        <span className="text-xs text-white/40">—</span>
                       </div>
                     </div>
                   </motion.section>
-                  
+
                   {/* Quick toggles grid */}
                   <motion.section
                     variants={itemVariants}
-                    className="grid grid-cols-4 gap-3"
+                    className="grid grid-cols-4 gap-2"
                     aria-label="Quick toggles"
                   >
-                    <motion.div variants={itemVariants} className="rounded-2x flex items-center justify-center aspect-square">
+                    <motion.div variants={itemVariants}>
                       <DarkModeToggle />
                     </motion.div>
                     <motion.div variants={itemVariants}>
