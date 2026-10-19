@@ -35,8 +35,8 @@ export function Equalizer({ playing, className }: { playing: boolean; className?
       {[0.9, 0.5, 0.75, 0.6].map((h, i) => (
         <motion.span
           key={i}
-          className="w-[3px] rounded-full bg-current"
-          animate={playing ? { height: ["30%", "100%", "45%", "85%", "30%"] } : { height: `${h * 40}%` }}
+          className="h-full w-[3px] origin-bottom rounded-full bg-current"
+          animate={playing ? { scaleY: [0.3, 1, 0.45, 0.85, 0.3] } : { scaleY: h * 0.4 }}
           transition={
             playing
               ? { duration: 0.9 + i * 0.17, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }

@@ -38,10 +38,11 @@ export function TimerDial({ compact = false }: { compact?: boolean }) {
 
       <div className="relative" style={{ width: size, height: size }}>
         <motion.div
-          className="absolute inset-[12%] rounded-full blur-3xl"
-          style={{ background: color }}
-          animate={{ opacity: running ? [0.16, 0.28, 0.16] : 0.08 }}
-          transition={running ? { duration: 4, repeat: Infinity, ease: "easeInOut" } : spring.smooth}
+          className="absolute -inset-[8%] rounded-full"
+          style={{ background: `radial-gradient(closest-side, ${color}, transparent)` }}
+          initial={false}
+          animate={{ opacity: running ? 0.22 : 0.08 }}
+          transition={spring.smooth}
         />
         <svg width={size} height={size} className="relative -rotate-90">
           <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={stroke} />

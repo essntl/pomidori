@@ -182,15 +182,23 @@ export function TimerProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (t.status !== "running") return;
+    // Re-render only when the displayed second changes: wake up just after each second
+    // boundary of the countdown instead of polling several times a second.
+    let id: ReturnType<typeof setTimeout>;
     const tick = () => {
       const n = Date.now();
       setNow(n);
       const cur = timerStore.get();
-      if (cur.status === "running" && cur.endsAt != null && n >= cur.endsAt) completePhase(n);
+      if (cur.status !== "running" || cur.endsAt == null) return;
+      if (n >= cur.endsAt) {
+        completePhase(n);
+        return;
+      }
+      const msIntoSecond = (cur.endsAt - n) % 1000;
+      id = setTimeout(tick, (msIntoSecond || 1000) + 15);
     };
     tick();
-    const id = setInterval(tick, 250);
-    return () => clearInterval(id);
+    return () => clearTimeout(id);
   }, [t.status, t.endsAt]);
 
   // Countdown in the tab title.

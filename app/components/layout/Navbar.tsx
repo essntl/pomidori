@@ -47,7 +47,7 @@ export default function Navbar() {
         {/* Soft frosted fade so content scrolling underneath never clashes with the controls. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 -bottom-4 bg-[var(--bg)]/70 backdrop-blur-xl [mask-image:linear-gradient(to_bottom,black_55%,transparent)]"
+          className="pointer-events-none absolute inset-0 -bottom-4 bg-gradient-to-b from-[var(--bg)] from-40% to-transparent"
         />
         <div className="relative mx-auto flex h-12 max-w-7xl items-center justify-between">
           <Link

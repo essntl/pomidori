@@ -83,7 +83,7 @@ export function NoteEditor({ page, onReady }: { page: NotePage; onReady?: (focus
         <EditorContent editor={editor} />
         {editor && <BubbleToolbar editor={editor} />}
       </div>
-      <div className="pointer-events-none fixed right-6 bottom-24 hidden rounded-full border border-line bg-surface px-3 py-1 text-[12px] font-semibold text-muted shadow-card backdrop-blur-xl lg:block">
+      <div className="pointer-events-none fixed right-6 bottom-24 hidden rounded-full border border-line bg-surface px-3 py-1 text-[12px] font-semibold text-muted shadow-card lg:block">
         {wordCount} {wordCount === 1 ? "word" : "words"}
       </div>
     </div>

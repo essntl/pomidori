@@ -55,7 +55,7 @@ export default function Home() {
         <section className="mx-auto max-w-6xl px-5 pb-20">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((f) => (
-              <div key={f.title} className="rounded-card border border-line bg-surface p-6 shadow-card backdrop-blur-xl transition-transform duration-300 hover:-translate-y-1">
+              <div key={f.title} className="rounded-card border border-line bg-surface p-6 shadow-card transition-transform duration-300 hover:-translate-y-1">
                 <span className="mb-4 grid size-12 place-items-center rounded-2xl text-white shadow-md" style={{ background: f.color }}>
                   <f.icon className="size-6" />
                 </span>
@@ -65,7 +65,7 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="mt-4 flex flex-col items-center gap-4 rounded-card border border-line bg-surface p-8 text-center shadow-card backdrop-blur-xl sm:flex-row sm:text-left">
+          <div className="mt-4 flex flex-col items-center gap-4 rounded-card border border-line bg-surface p-8 text-center shadow-card sm:flex-row sm:text-left">
             <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-accent-soft text-accent">
               <Lock className="size-6" />
             </span>
