@@ -14,7 +14,7 @@ const FEATURES = [
 export default function Home() {
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 pt-5">
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 pt-5">
         <Link href="/" className="glass flex h-11 items-center gap-2 rounded-full border border-line pr-4 pl-1.5 shadow-card">
           <Image src="/images/logo.png" alt="" width={32} height={32} className="size-8" priority />
           <span className="text-[17px] font-extrabold tracking-tight text-fg">Pomidori</span>
@@ -52,7 +52,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-5 pb-20">
+        <section className="mx-auto max-w-6xl px-4 pb-1.50">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((f) => (
               <div key={f.title} className="rounded-card border border-line bg-surface p-6 shadow-card transition-transform duration-300 hover:-translate-y-1">

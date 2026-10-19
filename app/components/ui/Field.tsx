@@ -8,7 +8,7 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
   { className, ...props },
   ref,
 ) {
-  return <input ref={ref} className={cn(control, "h-11", className)} {...props} />;
+  return <input ref={ref} className={cn(control, "h-10", className)} {...props} />;
 });
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(function Textarea(
@@ -19,7 +19,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
 });
 
 export function Select({ className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={cn(control, "h-11 cursor-pointer appearance-none pr-8", className)} {...props} />;
+  return <select className={cn(control, "h-10 cursor-pointer appearance-none pr-8", className)} {...props} />;
 }
 
 export function Field({
@@ -51,10 +51,10 @@ export function Field({
 /** A row in a settings-style list: label on the left, control on the right. */
 export function Row({ label, hint, children }: { label: ReactNode; hint?: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-3">
+    <div className="flex items-center justify-between gap-4 py-2.5">
       <div className="min-w-0">
-        <div className="text-[15px] font-semibold text-fg">{label}</div>
-        {hint && <div className="text-[13px] text-muted">{hint}</div>}
+        <div className="text-[14px] font-semibold text-fg">{label}</div>
+        {hint && <div className="text-[12px] text-muted">{hint}</div>}
       </div>
       <div className="shrink-0">{children}</div>
     </div>

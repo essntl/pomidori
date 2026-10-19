@@ -13,8 +13,8 @@ import { IconButton } from "../ui/Button";
 /** The large timer: phase switcher, progress ring, clock, controls and cycle dots. */
 export function TimerDial({ compact = false }: { compact?: boolean }) {
   const t = useTimer();
-  const size = compact ? 176 : 300;
-  const stroke = compact ? 9 : 14;
+  const size = compact ? 176 : 256;
+  const stroke = compact ? 9 : 12;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const color = PHASE_META[t.phase].color;
@@ -32,7 +32,7 @@ export function TimerDial({ compact = false }: { compact?: boolean }) {
             { value: "short", label: "Short break" },
             { value: "long", label: "Long break" },
           ]}
-          className="mb-6"
+          className="mb-5"
         />
       )}
 
@@ -65,7 +65,7 @@ export function TimerDial({ compact = false }: { compact?: boolean }) {
           </span>
           <Rolling
             value={fmtClock(t.remaining)}
-            className={cn("leading-none font-extrabold tracking-tight text-fg", compact ? "text-[38px]" : "text-[68px]")}
+            className={cn("leading-none font-extrabold tracking-tight text-fg", compact ? "text-[38px]" : "text-[56px]")}
           />
           <div className="mt-3 flex gap-1.5" aria-label={`Session ${cycleIndex + 1} of ${t.settings.longEvery}`}>
             {Array.from({ length: t.settings.longEvery }).map((_, i) => (
@@ -85,7 +85,7 @@ export function TimerDial({ compact = false }: { compact?: boolean }) {
         </div>
       </div>
 
-      <div className={cn("flex items-center gap-4", compact ? "mt-3" : "mt-7")}>
+      <div className={cn("flex items-center gap-4", compact ? "mt-3" : "mt-5")}>
         <IconButton label="Reset" variant="secondary" size={compact ? "md" : "lg"} onClick={t.reset} className="rounded-full">
           <RotateCcw />
         </IconButton>
@@ -97,7 +97,7 @@ export function TimerDial({ compact = false }: { compact?: boolean }) {
           aria-label={running ? "Pause" : "Start"}
           className={cn(
             "grid place-items-center rounded-full text-white shadow-[0_12px_30px_-10px_var(--glow)]",
-            compact ? "size-[52px] [&_svg]:size-6" : "size-[72px] [&_svg]:size-7",
+            compact ? "size-[52px] [&_svg]:size-6" : "size-16 [&_svg]:size-7",
           )}
           style={{ background: color, ["--glow" as string]: color }}
         >

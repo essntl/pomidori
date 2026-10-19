@@ -205,7 +205,7 @@ export default function MusicPage() {
           {/* Ambient */}
           <Card>
             <CardHeader title="Ambient sound" icon={<Waves />} action={<Switch label="Ambient sound" checked={ambient.enabled} onChange={ambientActions.toggle} />} />
-            <div className="px-5 pb-5">
+            <div className="px-4 pb-4">
               <div className="grid grid-cols-5 gap-2">
                 {AMBIENT_KINDS.map((k) => (
                   <button
