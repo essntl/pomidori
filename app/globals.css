@@ -7,7 +7,7 @@
 :root {
   --bg: #f3f3f6;
   --bg-glow: #ffffff;
-  --surface: rgb(255 255 255 / 0.78);
+  --surface: rgb(255 255 255 / 0.94);
   --surface-solid: #ffffff;
   --surface-2: rgb(15 15 25 / 0.045);
   --surface-3: rgb(15 15 25 / 0.08);
@@ -15,7 +15,7 @@
   --fg: #17171c;
   --fg-2: #4b4b57;
   --muted: #8b8b98;
-  --glass: rgb(255 255 255 / 0.62);
+  --glass: rgb(255 255 255 / 0.8);
   --backdrop: rgb(10 10 14 / 0.35);
 
   --accent: #ec4899;
@@ -32,7 +32,7 @@
 .dark {
   --bg: #09090b;
   --bg-glow: #17171c;
-  --surface: rgb(26 26 31 / 0.78);
+  --surface: rgb(24 24 29 / 0.96);
   --surface-solid: #141418;
   --surface-2: rgb(255 255 255 / 0.05);
   --surface-3: rgb(255 255 255 / 0.09);
@@ -40,7 +40,7 @@
   --fg: #f3f3f6;
   --fg-2: #b6b6c2;
   --muted: #74747f;
-  --glass: rgb(30 30 36 / 0.55);
+  --glass: rgb(28 28 34 / 0.78);
   --backdrop: rgb(0 0 0 / 0.55);
 
   --shadow-card: 0 1px 1px rgb(0 0 0 / 0.2), 0 10px 30px -12px rgb(0 0 0 / 0.6);
@@ -93,12 +93,23 @@ html {
 
 body {
   min-height: 100dvh;
+  /* Transparent so the fixed glow layer below shows through; <html> paints the base colour. */
+  background: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Decorative glow on its own fixed, composited layer: painted once, never repainted on scroll
+   (unlike background-attachment: fixed, which repaints the whole page every scroll frame). */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background:
     radial-gradient(1200px 600px at 50% -10%, var(--bg-glow), transparent 70%),
-    radial-gradient(800px 500px at 100% 0%, color-mix(in oklab, var(--accent) 7%, transparent), transparent 70%),
-    var(--bg);
-  background-attachment: fixed;
-  -webkit-font-smoothing: antialiased;
+    radial-gradient(800px 500px at 100% 0%, color-mix(in oklab, var(--accent) 7%, transparent), transparent 70%);
+  transform: translateZ(0);
 }
 
 ::selection {
@@ -141,8 +152,9 @@ input[type="number"] {
 @layer components {
   .glass {
     background: var(--glass);
-    backdrop-filter: blur(24px) saturate(1.6);
-    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+    /* Only used on small floating chrome (nav pills, dock), so the blur stays cheap. */
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
   }
 }
 

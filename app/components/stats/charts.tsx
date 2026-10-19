@@ -8,7 +8,7 @@ import { fmtDuration } from "@/app/lib/date";
 
 export function StatTile({ label, value, sub, className }: { label: string; value: string; sub?: string; className?: string }) {
   return (
-    <div className={cn("rounded-card border border-line bg-surface p-4 shadow-card backdrop-blur-xl", className)}>
+    <div className={cn("rounded-card border border-line bg-surface p-4 shadow-card", className)}>
       <div className="text-[12px] font-bold tracking-wider text-muted uppercase">{label}</div>
       <div className="mt-1 text-[28px] leading-tight font-extrabold tracking-tight text-fg tabular-nums">{value}</div>
       {sub && <div className="text-[13px] text-muted">{sub}</div>}
