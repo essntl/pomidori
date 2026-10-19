@@ -1,0 +1,13 @@
+.git
+.github
+.next
+node_modules
+npm-debug.log*
+.claude
+.DS_Store
+Dockerfile
+docker-compose.yml
+zimaos
+bun.lock
+*.md
+!README.md

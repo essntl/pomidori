@@ -1,65 +1,98 @@
 "use client";
 
-import Overlay from "./Overlay";
-import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { motion } from "framer-motion";
+import { Search } from "lucide-react";
+import { ui, useUI } from "@/app/context/hooks";
+import { spring } from "@/app/lib/motion";
+import { cn } from "@/app/lib/cn";
+import { Kbd } from "../ui/Card";
 import Island from "./Island";
 
-function Navbar() {
-  const [isOverlayOpen, setIsOverlayOpen] = useState(false);
-
+function ControlCenterIcon({ open }: { open: boolean }) {
+  // Four tiles that morph into a close mark.
+  const tiles = [
+    { x: 0, y: 0 },
+    { x: 1, y: 0 },
+    { x: 0, y: 1 },
+    { x: 1, y: 1 },
+  ];
   return (
-    <nav className="flex justify-between items-center p-4">
-      <Link 
-        href="/" 
-        className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-white/70 dark:bg-gray-900/60 shadow-lg dark:shadow-xl border border-white/60 dark:border-white/10 transition-all duration-300 hover:shadow-xl"
-      >
-        <Image 
-          src="/images/logo.png" 
-          alt="logo" 
-          width="40" 
-          height="40"
-          className="block" 
+    <span className="relative block size-[18px]">
+      {tiles.map((t, i) => (
+        <motion.span
+          key={i}
+          className="absolute size-[7px] rounded-[2.5px] bg-current"
+          initial={false}
+          animate={
+            open
+              ? { left: 5.5, top: 5.5, rotate: i % 3 === 0 ? 45 : -45, scaleX: 2.4, scaleY: 0.35, opacity: i < 2 ? 1 : 0 }
+              : { left: t.x * 11, top: t.y * 11, rotate: 0, scaleX: 1, scaleY: 1, opacity: 1 }
+          }
+          transition={spring.snappy}
         />
-        <span className="text-2xl font-bold text-gray-800 dark:text-gray-100 hidden md:block tracking-tight">
-          Pomidori
-        </span>
-      </Link>
-
-      <Island />
-
-
-      <button
-        onClick={() => setIsOverlayOpen(!isOverlayOpen)}
-        className="flex items-center justify-center w-12 h-12 rounded-2xl bg-white/70 dark:bg-gray-900/60 shadow-lg dark:shadow-xl border border-white/60 dark:border-white/10 transition-all duration-300 hover:shadow-xl hover:scale-105 group"
-        aria-label="Menu"
-      >
-        <div className="flex flex-col items-center justify-center gap-1.5">
-          <span
-            className={`block h-0.5 w-5 rounded-full bg-gray-700 dark:bg-gray-200 transition-all duration-300 ease-in-out ${
-              isOverlayOpen ? "rotate-45 translate-y-2" : ""
-            }`}
-          />
-          <span
-            className={`block h-0.5 w-5 rounded-full bg-gray-700 dark:bg-gray-200 transition-all duration-300 ease-in-out ${
-              isOverlayOpen ? "opacity-0 scale-0" : "opacity-100"
-            }`}
-          />
-          <span
-            className={`block h-0.5 w-5 rounded-full bg-gray-700 dark:bg-gray-200 transition-all duration-300 ease-in-out ${
-              isOverlayOpen ? "-rotate-45 -translate-y-2" : ""
-            }`}
-          />
-        </div>
-      </button>
-
-      <Overlay
-        isOpen={isOverlayOpen}
-        onClose={() => setIsOverlayOpen(false)}
-      />
-    </nav>
+      ))}
+    </span>
   );
 }
 
-export default Navbar;
+export default function Navbar() {
+  const { controlCenter } = useUI();
+
+  return (
+    <>
+      <Island />
+      <header className="sticky top-0 z-50 px-3 pt-3 pb-2 sm:px-5 sm:pt-4">
+        {/* Soft frosted fade so content scrolling underneath never clashes with the controls. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -bottom-4 bg-[var(--bg)]/70 backdrop-blur-xl [mask-image:linear-gradient(to_bottom,black_55%,transparent)]"
+        />
+        <div className="relative mx-auto flex h-12 max-w-7xl items-center justify-between">
+          <Link
+            href="/app"
+            aria-label="Pomidori home"
+            className="glass flex h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-line px-1.5 shadow-card transition-transform active:scale-95 md:pr-4"
+          >
+            <Image src="/images/logo.png" alt="" width={32} height={32} className="size-8 shrink-0" priority />
+            <span className="hidden text-[17px] font-extrabold tracking-tight text-fg md:block">Pomidori</span>
+          </Link>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={ui.openPalette}
+              className="glass hidden h-11 items-center gap-2 rounded-full border border-line pr-2 pl-4 text-sm font-semibold text-muted shadow-card transition-colors hover:text-fg lg:flex"
+            >
+              <Search className="size-4" />
+              <span className="mr-6">Search or run…</span>
+              <Kbd>Ctrl</Kbd>
+              <Kbd>K</Kbd>
+            </button>
+            <button
+              type="button"
+              aria-label="Search"
+              onClick={ui.openPalette}
+              className="glass grid size-11 place-items-center rounded-full border border-line text-fg shadow-card transition-transform active:scale-90 lg:hidden"
+            >
+              <Search className="size-[18px]" />
+            </button>
+            <button
+              type="button"
+              aria-label={controlCenter ? "Close control centre" : "Open control centre"}
+              aria-expanded={controlCenter}
+              onClick={ui.toggleControlCenter}
+              className={cn(
+                "relative grid size-11 place-items-center rounded-full border shadow-card transition-[transform,background-color,color] active:scale-90",
+                controlCenter ? "border-white/15 bg-white/15 text-white" : "glass border-line text-fg",
+              )}
+            >
+              <ControlCenterIcon open={controlCenter} />
+            </button>
+          </div>
+        </div>
+      </header>
+    </>
+  );
+}

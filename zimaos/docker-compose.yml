@@ -1,0 +1,58 @@
+# Pomidori for ZimaOS / CasaOS.
+# Install: App Store → "+" (Custom Install) → Import → paste this file.
+# Data lives in each visitor's browser, so no AppData volume is required.
+
+name: pomidori
+
+services:
+  pomidori:
+    image: ghcr.io/essntl/pomidori:latest
+    container_name: pomidori
+    restart: unless-stopped
+    network_mode: bridge
+    ports:
+      - target: 3000
+        published: "3456"
+        protocol: tcp
+    environment:
+      TZ: $TZ
+    deploy:
+      resources:
+        reservations:
+          memory: 64M
+        limits:
+          memory: 512M
+    x-casaos:
+      envs:
+        - container: TZ
+          description:
+            en_us: Time zone
+      ports:
+        - container: "3000"
+          description:
+            en_us: Web UI
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: pomidori
+  author: essential
+  developer: essential
+  category: Productivity
+  title:
+    en_us: Pomidori
+  tagline:
+    en_us: Focus timer, notes, tasks, calendar, habits and music in one place
+  description:
+    en_us: >-
+      A calm, self-hosted productivity suite: Pomodoro focus timer, Notion-style block notes, tasks,
+      calendar with .ics import/export, habit tracker, focus stats, and a music player for YouTube,
+      SoundCloud and radio streams. No accounts or database; everything is stored in your browser.
+  icon: https://raw.githubusercontent.com/essntl/pomidori/main/public/images/logo.png
+  screenshot_link: []
+  thumbnail: https://raw.githubusercontent.com/essntl/pomidori/main/public/images/logo.png
+  index: /
+  port_map: "3456"
+  scheme: http
+  tips: {}

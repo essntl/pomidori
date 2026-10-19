@@ -1,0 +1,15 @@
+# Run Pomidori with: docker compose up -d
+# Then open http://localhost:3000 (change the left-hand port to use another one).
+# No volumes needed: every user's data stays in their own browser.
+
+services:
+  pomidori:
+    image: ghcr.io/essntl/pomidori:latest
+    # To build from source instead of pulling, comment out `image` and uncomment `build`.
+    # build: .
+    container_name: pomidori
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - TZ=Etc/UTC
