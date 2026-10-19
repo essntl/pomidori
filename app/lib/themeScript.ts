@@ -1,0 +1,2 @@
+/** Inline script that applies theme + accent before first paint (no flash). */
+export const themeBootScript = `(function(){try{var r=document.documentElement;var s=null;var raw=localStorage.getItem("pomidori:settings");if(raw){s=JSON.parse(raw).data}var t=s&&s.theme;if(!t){var l=localStorage.getItem("darkMode");t=l==="true"?"dark":l==="false"?"light":"system"}var d=t==="dark"||(t==="system"&&matchMedia("(prefers-color-scheme: dark)").matches);if(d){r.classList.add("dark");r.style.colorScheme="dark"}r.dataset.accent=(s&&s.accent)||"pink"}catch(e){}})();`;
