@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, Reorder, motion, useDragControls } from "framer-motion";
 import { CalendarDays, CalendarClock, CheckCheck, Inbox, MoreHorizontal, Pencil, Plus, Sparkles, SquareCheckBig, Sun, Trash2 } from "lucide-react";
-import { useHydrated, useStore } from "@/app/lib/storage";
+import { createMemoryStore, useHydrated, useStore } from "@/app/lib/storage";
+import { notify } from "@/app/lib/alerts";
 import {
   INBOX_ID,
   addList,
@@ -13,6 +14,7 @@ import {
   renameList,
   reorderTasks,
   tasksStore,
+  updateTask,
   type Task,
 } from "@/app/lib/stores/tasks";
 import { dayKey, relativeDay } from "@/app/lib/date";
@@ -28,6 +30,15 @@ import { TaskDetail } from "@/app/components/tasks/TaskDetail";
 
 type View = "today" | "upcoming" | "completed" | `list:${string}`;
 
+/** Which sidebar list a task is currently being dragged over (to move it there on drop). */
+const dropTargetStore = createMemoryStore<string | null>(null);
+
+function listUnderPointer(point: { x: number; y: number }) {
+  const els = document.elementsFromPoint(point.x - window.scrollX, point.y - window.scrollY);
+  const el = els.find((e) => e instanceof HTMLElement && e.dataset.dropList) as HTMLElement | undefined;
+  return el?.dataset.dropList ?? null;
+}
+
 function ReorderItem({ task, children }: { task: Task; children: (grip: React.ReactNode) => React.ReactNode }) {
   const controls = useDragControls();
   return (
@@ -35,6 +46,19 @@ function ReorderItem({ task, children }: { task: Task; children: (grip: React.Re
       value={task.id}
       dragListener={false}
       dragControls={controls}
+      onDrag={(_, info) => {
+        const target = listUnderPointer(info.point);
+        if (target !== dropTargetStore.get()) dropTargetStore.set(target);
+      }}
+      onDragEnd={(_, info) => {
+        const target = listUnderPointer(info.point);
+        dropTargetStore.set(null);
+        if (target && target !== task.listId) {
+          const list = tasksStore.get().lists.find((l) => l.id === target);
+          updateTask(task.id, { listId: target });
+          notify({ title: `Moved to ${list?.name ?? "list"}`, body: task.title, icon: "📥", tone: "info", duration: 2200 });
+        }
+      }}
       layout="position"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -51,6 +75,7 @@ function ReorderItem({ task, children }: { task: Task; children: (grip: React.Re
 export default function TasksPage() {
   const hydrated = useHydrated();
   const { lists, tasks } = useStore(tasksStore);
+  const dropTarget = useStore(dropTargetStore);
   const [view, setView] = useState<View>("today");
   const [input, setInput] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
@@ -125,6 +150,8 @@ export default function TasksPage() {
             {lists.map((l) => (
               <NavButton
                 key={l.id}
+                dropId={l.id}
+                dropActive={dropTarget === l.id}
                 active={view === `list:${l.id}`}
                 onClick={() => setView(`list:${l.id}`)}
                 icon={l.id === INBOX_ID ? <Inbox /> : <span className="size-2.5 rounded-full" style={{ background: l.color }} />}
@@ -224,7 +251,7 @@ export default function TasksPage() {
                   <AnimatePresence initial={false}>
                     {items.map((t) => (
                       <motion.div key={t.id} layout exit={{ opacity: 0, x: -12 }} transition={spring.smooth}>
-                        <TaskRow task={t} list={listById.get(t.listId)} showList onOpen={() => setOpenId(t.id)} />
+                        <TaskRow task={t} list={listById.get(t.listId)} lists={lists} showList onOpen={() => setOpenId(t.id)} />
                       </motion.div>
                     ))}
                   </AnimatePresence>
@@ -236,7 +263,7 @@ export default function TasksPage() {
               <AnimatePresence initial={false}>
                 {visible.map((t) => (
                   <ReorderItem key={t.id} task={t}>
-                    {(grip) => <TaskRow task={t} dragHandle={grip} onOpen={() => setOpenId(t.id)} />}
+                    {(grip) => <TaskRow task={t} lists={lists} dragHandle={grip} onOpen={() => setOpenId(t.id)} />}
                   </ReorderItem>
                 ))}
               </AnimatePresence>
@@ -253,7 +280,7 @@ export default function TasksPage() {
                     exit={{ opacity: 0, x: -12, transition: { duration: 0.15 } }}
                     transition={spring.smooth}
                   >
-                    <TaskRow task={t} list={listById.get(t.listId)} showList onOpen={() => setOpenId(t.id)} />
+                    <TaskRow task={t} list={listById.get(t.listId)} lists={lists} showList onOpen={() => setOpenId(t.id)} />
                   </motion.div>
                 ))}
               </AnimatePresence>
@@ -305,14 +332,33 @@ export default function TasksPage() {
   );
 }
 
-function NavButton({ active, onClick, icon, label, count }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string; count?: number }) {
+function NavButton({
+  active,
+  onClick,
+  icon,
+  label,
+  count,
+  dropId,
+  dropActive,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  count?: number;
+  /** Lists accept tasks dragged by their grip. */
+  dropId?: string;
+  dropActive?: boolean;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
+      data-drop-list={dropId}
       className={cn(
         "relative flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[14px] font-semibold transition-colors [&_svg]:size-[18px]",
         active ? "text-fg" : "text-fg-2 hover:bg-surface-2",
+        dropActive && "bg-accent-soft text-accent ring-1 ring-accent/50",
       )}
     >
       {active && <motion.span layoutId="tasks-nav" transition={spring.snappy} className="absolute inset-0 rounded-xl bg-surface-3" />}

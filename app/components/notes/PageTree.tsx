@@ -7,6 +7,9 @@ import { cn } from "@/app/lib/cn";
 import { spring } from "@/app/lib/motion";
 import { Menu, type MenuItem } from "../ui/Menu";
 
+/** Deeper pages stop indenting so titles always stay readable inside the sidebar. */
+const MAX_INDENT_DEPTH = 3;
+
 /** MIME type used when dragging a page onto a folder. */
 export const PAGE_DRAG_TYPE = "application/x-pomidori-page";
 
@@ -48,7 +51,7 @@ export function PageRow({ page, depth, ...p }: TreeProps & { page: NotePage; dep
           "group relative flex h-8 cursor-pointer items-center gap-0.5 rounded-lg pr-1 text-[13.5px] transition-colors",
           selected ? "text-fg" : "text-fg-2 hover:bg-surface-2",
         )}
-        style={{ paddingLeft: 2 + depth * 14 }}
+        style={{ paddingLeft: 2 + Math.min(depth, MAX_INDENT_DEPTH) * 12 }}
       >
         {selected && <motion.span layoutId="note-selected" transition={spring.snappy} className="absolute inset-0 rounded-lg bg-surface-3" />}
         <button
@@ -61,7 +64,12 @@ export function PageRow({ page, depth, ...p }: TreeProps & { page: NotePage; dep
         </button>
         <button type="button" onClick={() => p.onSelect(page.id)} className="relative flex min-w-0 flex-1 items-center gap-1.5 text-left">
           <span className="shrink-0 text-[14px] leading-none">{page.icon}</span>
-          <span className={cn("truncate", selected ? "font-bold" : "font-semibold")}>{page.title || "Untitled"}</span>
+          <span className={cn("min-w-0 truncate", selected ? "font-bold" : "font-semibold")}>{page.title || "Untitled"}</span>
+          {depth > MAX_INDENT_DEPTH && (
+            <span className="shrink-0 rounded bg-surface-3 px-1 text-[10px] font-bold text-muted" title={`Nested ${depth} levels deep`}>
+              L{depth + 1}
+            </span>
+          )}
         </button>
         <div className="relative flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 max-md:opacity-100">
           <Menu

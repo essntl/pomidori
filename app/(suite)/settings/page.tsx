@@ -85,12 +85,14 @@ export default function SettingsPage() {
             </Row>
             <Row label="Phase chime">
               <div className="flex items-center gap-2">
-                <Select value={s.chime} onChange={(e) => updateSettings({ chime: e.target.value as Chime })} className="h-9 w-32">
+                <div className="w-32">
+<Select value={s.chime} onChange={(e) => updateSettings({ chime: e.target.value as Chime })} className="h-9">
                   <option value="timer">Bell</option>
                   <option value="start">Rise</option>
                   <option value="reset">Soft</option>
                   <option value="toggle">Click</option>
                 </Select>
+                </div>
                 <Button size="sm" variant="secondary" onClick={() => playSound(s.chime, true)}>
                   Test
                 </Button>

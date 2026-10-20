@@ -61,6 +61,13 @@ export default function Island() {
   const p = usePlayer();
   const alert = useIslandAlert();
   const [expanded, setExpanded] = useState(false);
+  // Activity restored on page load (a running timer, a queued track) should just be there,
+  // not pop in; only animate the island in for activity that starts after load.
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setSettled(true), 800);
+    return () => clearTimeout(id);
+  }, []);
   const ref = useRef<HTMLDivElement>(null);
 
   const showTimer = timer.active;
@@ -92,7 +99,7 @@ export default function Island() {
           <motion.div
             ref={ref}
             layout
-            initial={{ opacity: 0, scale: 0.6, y: -10 }}
+            initial={settled ? { opacity: 0, scale: 0.6, y: -10 } : false}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.6, y: -10 }}
             transition={spring.island}

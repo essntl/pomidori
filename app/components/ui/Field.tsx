@@ -1,4 +1,5 @@
 import { forwardRef, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/app/lib/cn";
 
 const control =
@@ -18,8 +19,14 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
   return <textarea ref={ref} className={cn(control, "min-h-24 resize-y py-2.5 leading-relaxed", className)} {...props} />;
 });
 
+/** Native select with a visible chevron (appearance-none hides the browser's own arrow). */
 export function Select({ className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={cn(control, "h-10 cursor-pointer appearance-none pr-8", className)} {...props} />;
+  return (
+    <span className="relative inline-flex w-full">
+      <select className={cn(control, "h-10 cursor-pointer appearance-none pr-9", className)} {...props} />
+      <ChevronDown aria-hidden className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted" />
+    </span>
+  );
 }
 
 export function Field({
