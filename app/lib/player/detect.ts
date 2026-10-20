@@ -55,6 +55,11 @@ export const SOURCE_LABEL: Record<SourceKind, string> = {
   audio: "Stream",
 };
 
+/** Older queue items stored YouTube's letterboxed 4:3 thumbnail; the 16:9 one crops cleanly. */
+export function artworkSrc(url: string | null | undefined) {
+  return url ? url.replace("/hqdefault.jpg", "/mqdefault.jpg") : null;
+}
+
 export function youtubeThumb(id: string) {
   return `https://i.ytimg.com/vi/${id}/mqdefault.jpg`;
 }

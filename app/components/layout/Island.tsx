@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Pause, Play, Plus, SkipBack, SkipForward, StepForward, Maximize2 } from "lucide-react";
 import { useTimer, PHASE_META } from "@/app/context/TimerContext";
-import { usePlayer } from "@/app/context/hooks";
+import { usePlayer, useSettings } from "@/app/context/hooks";
 import { dismissAlert, useIslandAlert, type AlertTone } from "@/app/lib/alerts";
 import { player } from "@/app/lib/player/controller";
 import { fmtClock } from "@/app/lib/date";
@@ -14,6 +14,9 @@ import { cn } from "@/app/lib/cn";
 import { Equalizer, Ring, Rolling } from "../ui/Rolling";
 import { Slider } from "../ui/Slider";
 import { Artwork, fmtSeconds } from "../music/Artwork";
+
+/** Small spinning-disc artwork when the vinyl style is chosen. */
+const spinClass = "rounded-full ring-2 ring-white/15 animate-[spin_7s_linear_infinite] motion-reduce:animate-none";
 
 const TONE: Record<AlertTone, string> = {
   accent: "var(--accent)",
@@ -51,6 +54,18 @@ function IslandButton({ label, onClick, children, big }: { label: string; onClic
   );
 }
 
+/** Artwork thumbnail for alerts; falls back to the emoji if the image fails to load. */
+function AlertImage({ src, fallback }: { src: string; fallback?: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white/10 text-lg">{fallback ?? "🎵"}</span>;
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- remote artwork from arbitrary hosts
+    <img src={src} alt="" onError={() => setFailed(true)} className="size-9 shrink-0 rounded-xl object-cover ring-1 ring-white/10" draggable={false} />
+  );
+}
+
 /**
  * The Dynamic Island: a black pill at the top centre that morphs between
  * hidden → compact (timer and/or music activity) → expanded controls, and briefly
@@ -59,6 +74,7 @@ function IslandButton({ label, onClick, children, big }: { label: string; onClic
 export default function Island() {
   const timer = useTimer();
   const p = usePlayer();
+  const vinyl = useSettings().music.artworkStyle === "vinyl";
   const alert = useIslandAlert();
   const [expanded, setExpanded] = useState(false);
   // Activity restored on page load (a running timer, a queued track) should just be there,
@@ -121,12 +137,16 @@ export default function Island() {
             <AnimatePresence mode="popLayout" initial={false}>
               {mode === "alert" && alert && (
                 <motion.div key={`alert-${alert.id}`} {...content} className="flex min-w-[260px] max-w-[min(420px,calc(100vw-1.5rem))] items-center gap-3 py-2.5 pr-5 pl-2.5">
-                  <span
-                    className="grid size-9 shrink-0 place-items-center rounded-full text-lg"
-                    style={{ background: `color-mix(in oklab, ${TONE[alert.tone]} 30%, transparent)` }}
-                  >
-                    {alert.icon ?? "•"}
-                  </span>
+                  {alert.image ? (
+                    <AlertImage src={alert.image} fallback={alert.icon} />
+                  ) : (
+                    <span
+                      className="grid size-9 shrink-0 place-items-center rounded-full text-lg"
+                      style={{ background: `color-mix(in oklab, ${TONE[alert.tone]} 30%, transparent)` }}
+                    >
+                      {alert.icon ?? "•"}
+                    </span>
+                  )}
                   <div className="min-w-0">
                     <div className="truncate text-[14px] font-bold leading-tight">{alert.title}</div>
                     {alert.body && <div className="truncate text-[12px] leading-tight text-white/60">{alert.body}</div>}
@@ -146,7 +166,7 @@ export default function Island() {
                   {showTimer && showMusic && <span className="h-4 w-px bg-white/15" />}
                   {showMusic && (
                     <div className="flex min-w-0 items-center gap-2">
-                      <Artwork track={p.track} className="size-7 rounded-lg" />
+                      <Artwork track={p.track} className={cn("size-7", vinyl ? spinClass : "rounded-lg")} style={vinyl ? { animationPlayState: p.playing ? "running" : "paused" } : undefined} />
                       {!showTimer && <span className="max-w-[110px] truncate sm:max-w-[160px] text-[13px] font-semibold">{p.track!.title}</span>}
                       <Equalizer playing={p.status === "playing"} className="text-[var(--accent)]" />
                     </div>
@@ -180,7 +200,7 @@ export default function Island() {
                   {showMusic && p.track && (
                     <div className="flex flex-col gap-2.5">
                       <div className="flex items-center gap-3">
-                        <Artwork track={p.track} className="size-11 rounded-xl" />
+                        <Artwork track={p.track} className={cn("size-11", vinyl ? spinClass : "rounded-xl")} style={vinyl ? { animationPlayState: p.playing ? "running" : "paused" } : undefined} />
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-[14px] font-bold">{p.track.title}</div>
                           <div className="truncate text-[12px] text-white/55">{p.track.artist || "—"}</div>

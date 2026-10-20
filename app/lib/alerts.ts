@@ -8,7 +8,8 @@ import { uid } from "./id";
  */
 
 export type AlertTone = "accent" | "success" | "info" | "warning" | "danger";
-export type IslandAlert = { id: string; title: string; body?: string; icon?: string; tone: AlertTone; duration: number };
+/** `image` (e.g. album artwork) is shown instead of the emoji `icon` when it loads. */
+export type IslandAlert = { id: string; title: string; body?: string; icon?: string; image?: string | null; tone: AlertTone; duration: number };
 
 let current: IslandAlert | null = null;
 const queue: IslandAlert[] = [];
@@ -30,7 +31,7 @@ function showNext() {
   }
 }
 
-export function notify(alert: { title: string; body?: string; icon?: string; tone?: AlertTone; duration?: number }) {
+export function notify(alert: { title: string; body?: string; icon?: string; image?: string | null; tone?: AlertTone; duration?: number }) {
   queue.push({ id: uid(), tone: "accent", duration: 3200, ...alert });
   if (!current && !timer) showNext();
 }

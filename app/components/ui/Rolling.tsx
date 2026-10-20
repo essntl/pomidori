@@ -3,6 +3,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ease, spring } from "@/app/lib/motion";
 import { cn } from "@/app/lib/cn";
+import { useStore } from "@/app/lib/storage";
+import { settingsStore, type Settings } from "@/app/lib/stores/settings";
 
 /** Text whose characters roll vertically when they change (clock digits). */
 export function Rolling({ value, className }: { value: string; className?: string }) {
@@ -29,7 +31,12 @@ export function Rolling({ value, className }: { value: string; className?: strin
 }
 
 /** Animated equaliser bars for "now playing". */
-export function Equalizer({ playing, className }: { playing: boolean; className?: string }) {
+const selectEqualizer = (s: Settings) => s.music.equalizer;
+
+export function Equalizer({ playing: isPlaying, className }: { playing: boolean; className?: string }) {
+  // Settings → Music player can turn the animation off; bars then sit still.
+  const animated = useStore(settingsStore, selectEqualizer);
+  const playing = isPlaying && animated;
   return (
     <span className={cn("inline-flex h-3.5 items-end gap-[2px]", className)} aria-hidden>
       {[0.9, 0.5, 0.75, 0.6].map((h, i) => (

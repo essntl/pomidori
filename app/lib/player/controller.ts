@@ -1,8 +1,9 @@
 import { createMemoryStore, createStore } from "../storage";
 import { uid } from "../id";
 import { notify } from "../alerts";
+import { settingsStore } from "../stores/settings";
 import type { Adapter, AdapterEvents, AdapterState, SourceKind, Track } from "./types";
-import { detectSource, fetchOEmbed, youtubeThumb } from "./detect";
+import { artworkSrc, detectSource, fetchOEmbed, youtubeThumb } from "./detect";
 import { YouTubeAdapter, expandYouTubePlaylist } from "./youtube";
 import { SoundCloudAdapter } from "./soundcloud";
 import { AudioAdapter } from "./audio";
@@ -90,8 +91,31 @@ function currentTrack(): Track | null {
   return queue[index] ?? null;
 }
 
+/** Update a track's metadata wherever it lives (queue or a playlist). */
 function patchTrack(id: string, patch: Partial<Track>) {
-  playerStore.set((p) => ({ ...p, queue: p.queue.map((t) => (t.id === id ? { ...t, ...patch } : t)) }));
+  playerStore.set((p) => ({
+    ...p,
+    queue: p.queue.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+    playlists: p.playlists.map((pl) => (pl.tracks.some((t) => t.id === id) ? { ...pl, tracks: pl.tracks.map((t) => (t.id === id ? { ...t, ...patch } : t)) } : pl)),
+  }));
+}
+
+function updatePlaylist(id: string, fn: (pl: SavedPlaylist) => SavedPlaylist) {
+  playerStore.set((p) => ({ ...p, playlists: p.playlists.map((pl) => (pl.id === id ? fn(pl) : pl)) }));
+}
+
+/** Tracks get fresh ids when copied between the queue and playlists so each list can reorder independently. */
+function copyTrack(t: Track): Track {
+  return { ...t, id: uid() };
+}
+
+function shuffled<T>(items: T[]) {
+  const a = [...items];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 function eventsFor(source: SourceKind): AdapterEvents {
@@ -105,7 +129,9 @@ function eventsFor(source: SourceKind): AdapterEvents {
         const t = currentTrack();
         if (t && lastAnnounced !== t.id) {
           lastAnnounced = t.id;
-          notify({ title: t.title, body: t.artist || undefined, icon: "🎵", tone: "info", duration: 2400 });
+          if (settingsStore.get().music.trackAlerts) {
+            notify({ title: t.title, body: t.artist || undefined, icon: "🎵", image: artworkSrc(t.artwork), tone: "info", duration: 2400 });
+          }
         }
       } else if (state === "ended") {
         stopPolling();
@@ -341,6 +367,7 @@ export const player = {
         title: tracks.length > 1 ? `Added ${tracks.length} tracks` : "Added to queue",
         body: tracks.length === 1 ? tracks[0].title : undefined,
         icon: "➕",
+        image: tracks.length === 1 ? artworkSrc(tracks[0].artwork) : null,
         tone: "info",
         duration: 2200,
       });
@@ -446,19 +473,79 @@ export const player = {
     lastAnnounced = null;
     updateMediaSession();
   },
+  /* ───────────── playlists ───────────── */
+
+  createPlaylist(name: string, tracks: Track[] = []) {
+    const pl: SavedPlaylist = { id: uid(), name: name.trim() || "New playlist", tracks: tracks.map(copyTrack) };
+    playerStore.set((p) => ({ ...p, playlists: [...p.playlists, pl] }));
+    return pl;
+  },
   savePlaylist(name: string) {
     const tracks = playerStore.get().queue;
-    if (!tracks.length) return;
-    playerStore.set((p) => ({ ...p, playlists: [...p.playlists, { id: uid(), name, tracks }] }));
+    if (!tracks.length) return null;
+    return player.createPlaylist(name, tracks);
   },
-  loadPlaylist(id: string) {
-    const pl = playerStore.get().playlists.find((p) => p.id === id);
-    if (!pl) return;
-    if (activeSource) adapters[activeSource]?.stop();
-    playerStore.set((p) => ({ ...p, queue: pl.tracks.map((t) => ({ ...t, id: uid() })), index: 0 }));
-    loadIndex(0, true);
+  renamePlaylist(id: string, name: string) {
+    if (!name.trim()) return;
+    updatePlaylist(id, (pl) => ({ ...pl, name: name.trim() }));
   },
   deletePlaylist(id: string) {
     playerStore.set((p) => ({ ...p, playlists: p.playlists.filter((pl) => pl.id !== id) }));
+  },
+  /** Replace the queue with the playlist and start playing (optionally shuffled). */
+  loadPlaylist(id: string, opts: { shuffle?: boolean; startAt?: number } = {}) {
+    const pl = playerStore.get().playlists.find((p) => p.id === id);
+    if (!pl || !pl.tracks.length) return;
+    if (activeSource) adapters[activeSource]?.stop();
+    let tracks = pl.tracks.map(copyTrack);
+    if (opts.shuffle) tracks = shuffled(tracks);
+    playerStore.set((p) => ({ ...p, queue: tracks, index: 0 }));
+    loadIndex(opts.shuffle ? 0 : Math.min(opts.startAt ?? 0, tracks.length - 1), true);
+  },
+  /** Add the playlist's tracks to the end of the queue. */
+  appendPlaylist(id: string) {
+    const pl = playerStore.get().playlists.find((p) => p.id === id);
+    if (!pl || !pl.tracks.length) return;
+    const wasIdle = !playerRuntime.get().loaded || !playerStore.get().queue.length;
+    const startAt = playerStore.get().queue.length;
+    playerStore.set((p) => ({ ...p, queue: [...p.queue, ...pl.tracks.map(copyTrack)] }));
+    notify({ title: `Queued ${pl.tracks.length} track${pl.tracks.length === 1 ? "" : "s"}`, body: pl.name, icon: "➕", tone: "info", duration: 2200 });
+    if (wasIdle) loadIndex(startAt, true);
+  },
+  addToPlaylist(id: string, track: Track) {
+    const pl = playerStore.get().playlists.find((p) => p.id === id);
+    if (!pl) return;
+    if (pl.tracks.some((t) => t.source === track.source && t.ref === track.ref)) {
+      notify({ title: "Already in playlist", body: pl.name, icon: "📃", tone: "info", duration: 2000 });
+      return;
+    }
+    updatePlaylist(id, (p) => ({ ...p, tracks: [...p.tracks, copyTrack(track)] }));
+    notify({ title: `Added to ${pl.name}`, body: track.title, icon: "📃", image: artworkSrc(track.artwork), tone: "success", duration: 2200 });
+  },
+  /** Paste a link straight into a playlist (YouTube playlists expand into tracks). */
+  async addUrlToPlaylist(id: string, input: string) {
+    setRuntime({ adding: true });
+    try {
+      const tracks = await buildTracks(input);
+      updatePlaylist(id, (p) => ({ ...p, tracks: [...p.tracks, ...tracks] }));
+      hydrateTitles(tracks);
+      return tracks;
+    } finally {
+      setRuntime({ adding: false });
+    }
+  },
+  removeFromPlaylist(id: string, trackId: string) {
+    updatePlaylist(id, (p) => ({ ...p, tracks: p.tracks.filter((t) => t.id !== trackId) }));
+  },
+  reorderPlaylist(id: string, ids: string[]) {
+    updatePlaylist(id, (p) => {
+      const byId = new Map(p.tracks.map((t) => [t.id, t]));
+      return { ...p, tracks: ids.map((x) => byId.get(x)!).filter(Boolean) };
+    });
+  },
+  /** Overwrite a playlist with the current queue. */
+  replacePlaylistWithQueue(id: string) {
+    const queue = playerStore.get().queue;
+    updatePlaylist(id, (p) => ({ ...p, tracks: queue.map(copyTrack) }));
   },
 };
