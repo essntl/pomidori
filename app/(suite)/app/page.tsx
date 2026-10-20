@@ -154,7 +154,7 @@ export default function Dashboard() {
         {/* Now playing */}
         <Widget variants={listItem} className="flex flex-col">
           <CardHeader title="Music" icon={<Music />} action={<MoreLink href="/music" />} />
-          <div className="flex flex-1 flex-col justify-between gap-3 px-5 pb-5">
+          <div className="flex flex-1 flex-col justify-between gap-3 px-4 pb-4">
             <div className="flex items-center gap-3">
               <Artwork track={p.track} className="size-14 rounded-2xl" />
               <div className="min-w-0 flex-1">
@@ -225,7 +225,7 @@ export default function Dashboard() {
             }
           />
           {todaysHabits.length > 0 && (
-            <div className="mx-5 mb-3 h-1.5 overflow-hidden rounded-full bg-surface-3">
+            <div className="mx-4 mb-2.5 h-1.5 overflow-hidden rounded-full bg-surface-3">
               <motion.div
                 className="h-full rounded-full bg-accent"
                 initial={false}
@@ -234,7 +234,7 @@ export default function Dashboard() {
               />
             </div>
           )}
-          <div className="flex flex-wrap content-start gap-2 px-5 pb-5">
+          <div className="flex flex-wrap content-start gap-2 px-4 pb-4">
             {hydrated && todaysHabits.length === 0 && (
               <Link href="/habits" className="text-sm text-muted">
                 No habits for today. <span className="font-semibold text-accent">Create one</span>
@@ -263,7 +263,7 @@ export default function Dashboard() {
         {/* Week focus */}
         <Widget variants={listItem}>
           <CardHeader title="This week" icon={<ChartColumn />} action={<MoreLink href="/stats" />} />
-          <div className="px-5 pt-3 pb-4">
+          <div className="px-4 pt-3 pb-4">
             <BarChart data={week} height={84} />
           </div>
         </Widget>

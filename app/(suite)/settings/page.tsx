@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, Database, Download, Monitor, Moon, Palette, RotateCcw, Sun, Timer, Upload, Volume2 } from "lucide-react";
-import { useSettings } from "@/app/context/hooks";
-import { ACCENTS, updateSettings, type Chime, type ThemePref } from "@/app/lib/stores/settings";
+import { Bell, Circle, Database, Disc3, Download, Monitor, Moon, Music, Palette, RotateCcw, Square, Sun, Timer, Upload, Volume2 } from "lucide-react";
+import { usePlayer, useSettings } from "@/app/context/hooks";
+import { NowPlayingArt } from "@/app/components/music/NowPlayingArt";
+import { ACCENTS, updateMusicSettings, updateSettings, type ArtworkStyle, type Chime, type ThemePref } from "@/app/lib/stores/settings";
 import { exportAll, importAll, pickTextFile, resetAll } from "@/app/lib/backup";
 import { notify, playSound, requestNotificationPermission } from "@/app/lib/alerts";
 import { cn } from "@/app/lib/cn";
@@ -18,6 +19,7 @@ import { TimerSettingsForm } from "@/app/components/timer/TimerSettingsForm";
 
 export default function SettingsPage() {
   const s = useSettings();
+  const p = usePlayer();
   const [confirmReset, setConfirmReset] = useState(false);
 
   return (
@@ -26,7 +28,7 @@ export default function SettingsPage() {
       <div className="flex flex-col gap-4">
         <Card>
           <CardHeader title="Appearance" icon={<Palette />} />
-          <div className="divide-y divide-line px-5 pb-2">
+          <div className="divide-y divide-line px-4 pb-1.5">
             <Row label="Theme">
               <Segmented<ThemePref>
                 value={s.theme}
@@ -67,7 +69,7 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader title="Focus timer" icon={<Timer />} />
-          <div className="px-5 pb-4">
+          <div className="px-4 pb-3.5">
             <TimerSettingsForm />
             <div className="divide-y divide-line border-t border-line">
               <Row label="Countdown in tab title">
@@ -78,19 +80,54 @@ export default function SettingsPage() {
         </Card>
 
         <Card>
+          <CardHeader title="Music player" icon={<Music />} />
+          <div className="px-4 pb-1.5">
+            <div className="flex items-center gap-4 py-2.5">
+              <NowPlayingArt track={p.track} playing={p.playing || s.music.artworkStyle === "vinyl"} variant={s.music.artworkStyle} className="w-20 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <div className="mb-1.5 text-[14px] font-semibold text-fg">Artwork style</div>
+                <Segmented<ArtworkStyle>
+                  value={s.music.artworkStyle}
+                  onChange={(artworkStyle) => updateMusicSettings({ artworkStyle })}
+                  options={[
+                    { value: "square", label: <><Square /> Square</> },
+                    { value: "round", label: <><Circle /> Round</> },
+                    { value: "vinyl", label: <><Disc3 /> Vinyl</> },
+                  ]}
+                />
+                <p className="mt-1.5 text-[12px] text-muted">Vinyl spins while music plays, in the player and the Dynamic Island.</p>
+              </div>
+            </div>
+            <div className="divide-y divide-line border-t border-line">
+              <Row label="Blurred artwork background" hint="Soft glow of the cover behind the player">
+                <Switch label="Blurred artwork background" checked={s.music.blurBackdrop} onChange={(blurBackdrop) => updateMusicSettings({ blurBackdrop })} />
+              </Row>
+              <Row label="Song alerts" hint="Show each new song in the Dynamic Island">
+                <Switch label="Song alerts" checked={s.music.trackAlerts} onChange={(trackAlerts) => updateMusicSettings({ trackAlerts })} />
+              </Row>
+              <Row label="Animated equalizer" hint="Moving bars while music plays">
+                <Switch label="Animated equalizer" checked={s.music.equalizer} onChange={(equalizer) => updateMusicSettings({ equalizer })} />
+              </Row>
+            </div>
+          </div>
+        </Card>
+
+        <Card>
           <CardHeader title="Sounds & notifications" icon={<Volume2 />} />
-          <div className="divide-y divide-line px-5 pb-2">
+          <div className="divide-y divide-line px-4 pb-1.5">
             <Row label="Sounds">
               <Switch label="Sounds" checked={s.sounds} onChange={(v) => updateSettings({ sounds: v })} />
             </Row>
             <Row label="Phase chime">
               <div className="flex items-center gap-2">
-                <Select value={s.chime} onChange={(e) => updateSettings({ chime: e.target.value as Chime })} className="h-9 w-32">
+                <div className="w-32">
+<Select value={s.chime} onChange={(e) => updateSettings({ chime: e.target.value as Chime })} className="h-9">
                   <option value="timer">Bell</option>
                   <option value="start">Rise</option>
                   <option value="reset">Soft</option>
                   <option value="toggle">Click</option>
                 </Select>
+                </div>
                 <Button size="sm" variant="secondary" onClick={() => playSound(s.chime, true)}>
                   Test
                 </Button>
@@ -123,7 +160,7 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader title="Your data" icon={<Database />} />
-          <div className="px-5 pb-5">
+          <div className="px-4 pb-4">
             <p className="mb-4 text-sm text-muted">
               Notes, tasks, events, habits, focus history and music queues never leave this browser. Export a backup to move them to another device.
             </p>

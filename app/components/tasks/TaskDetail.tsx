@@ -1,18 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Timer, Trash2, X } from "lucide-react";
+import { Timer, Trash2, X } from "lucide-react";
 import { deleteTask, updateTask, type Priority, type Task, type TaskList } from "@/app/lib/stores/tasks";
 import { timerActions } from "@/app/context/TimerContext";
-import { uid } from "@/app/lib/id";
 import { Modal } from "../ui/Modal";
-import { Field, Input, Select, Textarea } from "../ui/Field";
+import { Field, Input, Select } from "../ui/Field";
+import { RichText } from "../ui/RichText";
+import { Subtasks } from "./Subtasks";
 import { Button, IconButton } from "../ui/Button";
 import { Segmented } from "../ui/Segmented";
 import { PRIORITY_COLOR, PRIORITY_LABEL, TaskCheck } from "./TaskRow";
 
 export function TaskDetail({ task, lists, onClose }: { task: Task | null; lists: TaskList[]; onClose: () => void }) {
-  const [newSub, setNewSub] = useState("");
   // Keep showing the last task while the sheet animates out.
   const [shown, setShown] = useState(task);
   if (task && task !== shown) setShown(task);
@@ -105,57 +105,14 @@ export function TaskDetail({ task, lists, onClose }: { task: Task | null; lists:
               className="w-full"
             />
           </Field>
-          <Field label="Subtasks">
-            <div className="flex flex-col gap-1">
-              {t.subtasks.map((s) => (
-                <div key={s.id} className="group flex items-center gap-2.5 rounded-xl px-1 py-1">
-                  <input
-                    type="checkbox"
-                    checked={s.done}
-                    onChange={() =>
-                      updateTask(t.id, { subtasks: t.subtasks.map((x) => (x.id === s.id ? { ...x, done: !x.done } : x)) })
-                    }
-                    className="size-4 accent-[var(--accent)]"
-                  />
-                  <input
-                    value={s.title}
-                    onChange={(e) =>
-                      updateTask(t.id, { subtasks: t.subtasks.map((x) => (x.id === s.id ? { ...x, title: e.target.value } : x)) })
-                    }
-                    className={`flex-1 bg-transparent text-sm outline-none ${s.done ? "text-muted line-through" : "text-fg"}`}
-                  />
-                  <IconButton
-                    size="sm"
-                    label="Remove subtask"
-                    className="opacity-0 group-hover:opacity-100"
-                    onClick={() => updateTask(t.id, { subtasks: t.subtasks.filter((x) => x.id !== s.id) })}
-                  >
-                    <X />
-                  </IconButton>
-                </div>
-              ))}
-              <form
-                className="flex items-center gap-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!newSub.trim()) return;
-                  updateTask(t.id, { subtasks: [...t.subtasks, { id: uid(), title: newSub.trim(), done: false }] });
-                  setNewSub("");
-                }}
-              >
-                <Plus className="ml-1 size-4 text-muted" />
-                <input
-                  value={newSub}
-                  onChange={(e) => setNewSub(e.target.value)}
-                  placeholder="Add a subtask"
-                  className="h-9 flex-1 bg-transparent text-sm text-fg outline-none placeholder:text-muted"
-                />
-              </form>
-            </div>
-          </Field>
-          <Field label="Notes">
-            <Textarea value={t.notes} onChange={(e) => updateTask(t.id, { notes: e.target.value })} placeholder="Add details…" />
-          </Field>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[13px] font-semibold text-fg-2">Subtasks</span>
+            <Subtasks task={t} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[13px] font-semibold text-fg-2">Notes</span>
+            <RichText key={t.id} value={t.notes} onChange={(html) => updateTask(t.id, { notes: html })} />
+          </div>
         </div>
       )}
     </Modal>

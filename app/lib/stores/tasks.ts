@@ -93,6 +93,15 @@ export function deleteList(id: string) {
   }));
 }
 
+const squash = (s: string) => s.toLowerCase().replace(/[\s_-]+/g, "");
+
+/** Find a list by a loosely typed name: exact, then ignoring spaces/dashes, then by prefix. */
+export function findList(lists: TaskList[], name: string) {
+  const q = squash(name);
+  if (!q) return undefined;
+  return lists.find((l) => squash(l.name) === q) ?? lists.find((l) => squash(l.name).startsWith(q));
+}
+
 const WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
 /**
@@ -111,12 +120,27 @@ export function parseQuickAdd(input: string, lists: TaskList[]) {
     return pre;
   });
 
-  title = title.replace(/(^|\s)#(\S+)/, (match, pre, name: string) => {
-    const list = lists.find((l) => l.name.toLowerCase() === name.toLowerCase());
-    if (!list) return match;
-    listId = list.id;
-    return pre;
-  });
+  // #List: exact multi-word names first ("#side project"), then single tokens matched loosely
+  // ("#sideproject", "#side-project", or a prefix like "#side").
+  const lower = title.toLowerCase();
+  for (const l of [...lists].sort((x, y) => y.name.length - x.name.length)) {
+    const needle = `#${l.name.toLowerCase()}`;
+    const at = lower.indexOf(needle);
+    const end = at + needle.length;
+    if (at >= 0 && (at === 0 || /\s/.test(lower[at - 1])) && (end === lower.length || /\s/.test(lower[end]))) {
+      listId = l.id;
+      title = title.slice(0, at) + title.slice(end);
+      break;
+    }
+  }
+  if (!listId) {
+    title = title.replace(/(^|\s)#(\S+)/, (match, pre, token: string) => {
+      const list = findList(lists, token);
+      if (!list) return match;
+      listId = list.id;
+      return pre;
+    });
+  }
 
   const today = new Date();
   title = title.replace(/(^|\s)(today|tod|tomorrow|tmr|tom|next week|mon|tue|wed|thu|fri|sat|sun)[a-z]*\b/i, (match, pre, word: string) => {

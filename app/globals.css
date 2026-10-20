@@ -93,32 +93,26 @@ html {
 
 body {
   min-height: 100dvh;
-  /* Transparent so the fixed glow layer below shows through; <html> paints the base colour. */
-  background: transparent;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* Decorative glow on its own fixed, composited layer: painted once, never repainted on scroll
-   (unlike background-attachment: fixed, which repaints the whole page every scroll frame). */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
+  /* The glow scrolls with the page: painted once per tile, no fixed layer to composite
+     (fixed attachment repaints on scroll; a fixed z-index:-1 layer caused load flicker). */
   background:
     radial-gradient(1200px 600px at 50% -10%, var(--bg-glow), transparent 70%),
-    radial-gradient(800px 500px at 100% 0%, color-mix(in oklab, var(--accent) 7%, transparent), transparent 70%);
-  transform: translateZ(0);
+    radial-gradient(800px 500px at 100% 0%, color-mix(in oklab, var(--accent) 7%, transparent), transparent 70%),
+    var(--bg);
+  background-repeat: no-repeat;
+  -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
   background: color-mix(in oklab, var(--accent) 28%, transparent);
 }
 
-:focus-visible {
-  outline: 2px solid color-mix(in oklab, var(--accent) 70%, transparent);
-  outline-offset: 2px;
+/* In the base layer so utilities like outline-none can override it. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--accent) 70%, transparent);
+    outline-offset: 2px;
+  }
 }
 
 * {
@@ -165,7 +159,7 @@ input[type="number"] {
   color: var(--fg);
   font-size: 1rem;
   line-height: 1.7;
-  padding-bottom: 30vh;
+  padding-bottom: 6rem;
 }
 .prose-editor > * + * {
   margin-top: 0.35em;

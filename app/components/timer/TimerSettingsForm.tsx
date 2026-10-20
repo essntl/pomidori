@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Minus, Plus } from "lucide-react";
+import { ChevronDown, Minus, Plus } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { spring } from "@/app/lib/motion";
 import { TIMER_PRESETS, timerActions, timerSettingsStore, type TimerSettings } from "@/app/context/TimerContext";
 import { useStore } from "@/app/lib/storage";
 import { cn } from "@/app/lib/cn";
@@ -62,51 +64,75 @@ function Stepper({
 }
 
 /** Timer preferences. Changes apply instantly (no save button, no stale copies). */
-export function TimerSettingsForm() {
+export function TimerSettingsForm({ collapsible = false }: { collapsible?: boolean }) {
   const s = useStore(timerSettingsStore);
+  const [open, setOpen] = useState(!collapsible);
   const set = (patch: Partial<TimerSettings>) => timerActions.updateSettings(patch);
   const activePreset = TIMER_PRESETS.find((p) => p.work === s.work && p.short === s.short && p.long === s.long)?.name;
 
   return (
     <div>
-      <div className="mb-2 grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-1.5">
         {TIMER_PRESETS.map((p) => (
           <button
             key={p.name}
             type="button"
             onClick={() => set({ work: p.work, short: p.short, long: p.long })}
             className={cn(
-              "rounded-2xl border px-3 py-2.5 text-left transition-colors",
+              "rounded-xl border px-2.5 py-1.5 text-left transition-colors",
               activePreset === p.name ? "border-accent/50 bg-accent-soft" : "border-line bg-surface-2 hover:bg-surface-3",
             )}
           >
             <div className={cn("text-[13px] font-bold", activePreset === p.name ? "text-accent" : "text-fg")}>{p.name}</div>
-            <div className="text-xs text-muted tabular-nums">
+            <div className="text-[11px] text-muted tabular-nums">
               {p.work} / {p.short} / {p.long}
             </div>
           </button>
         ))}
       </div>
+      {collapsible && (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="mt-2 flex w-full items-center justify-between rounded-lg py-1 text-[13px] font-semibold text-fg-2 hover:text-fg"
+        >
+          {open ? "Hide settings" : `Customize · auto-breaks ${s.autoStartBreaks ? "on" : "off"}, long break every ${s.longEvery}`}
+          <ChevronDown className={cn("size-4 transition-transform duration-200", open && "rotate-180")} />
+        </button>
+      )}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={spring.smooth}
+            className="overflow-hidden"
+          >
       <div className="divide-y divide-line">
-        <Row label="Focus">
-          <Stepper value={s.work} min={LIMITS.work[0]} max={LIMITS.work[1]} suffix="min" onChange={(v) => set({ work: v })} />
-        </Row>
-        <Row label="Short break">
-          <Stepper value={s.short} min={LIMITS.short[0]} max={LIMITS.short[1]} suffix="min" onChange={(v) => set({ short: v })} />
-        </Row>
-        <Row label="Long break">
-          <Stepper value={s.long} min={LIMITS.long[0]} max={LIMITS.long[1]} suffix="min" onChange={(v) => set({ long: v })} />
-        </Row>
-        <Row label="Long break every" hint="Focus sessions per cycle">
-          <Stepper value={s.longEvery} min={LIMITS.longEvery[0]} max={LIMITS.longEvery[1]} onChange={(v) => set({ longEvery: v })} />
-        </Row>
-        <Row label="Auto-start breaks">
-          <Switch label="Auto-start breaks" checked={s.autoStartBreaks} onChange={(v) => set({ autoStartBreaks: v })} />
-        </Row>
-        <Row label="Auto-start focus" hint="Start the next session when a break ends">
-          <Switch label="Auto-start focus" checked={s.autoStartWork} onChange={(v) => set({ autoStartWork: v })} />
-        </Row>
-      </div>
+            <Row label="Focus">
+              <Stepper value={s.work} min={LIMITS.work[0]} max={LIMITS.work[1]} suffix="min" onChange={(v) => set({ work: v })} />
+            </Row>
+            <Row label="Short break">
+              <Stepper value={s.short} min={LIMITS.short[0]} max={LIMITS.short[1]} suffix="min" onChange={(v) => set({ short: v })} />
+            </Row>
+            <Row label="Long break">
+              <Stepper value={s.long} min={LIMITS.long[0]} max={LIMITS.long[1]} suffix="min" onChange={(v) => set({ long: v })} />
+            </Row>
+            <Row label="Long break every" hint="Focus sessions per cycle">
+              <Stepper value={s.longEvery} min={LIMITS.longEvery[0]} max={LIMITS.longEvery[1]} onChange={(v) => set({ longEvery: v })} />
+            </Row>
+            <Row label="Auto-start breaks">
+              <Switch label="Auto-start breaks" checked={s.autoStartBreaks} onChange={(v) => set({ autoStartBreaks: v })} />
+            </Row>
+            <Row label="Auto-start focus" hint="Start the next session when a break ends">
+              <Switch label="Auto-start focus" checked={s.autoStartWork} onChange={(v) => set({ autoStartWork: v })} />
+            </Row>
+          </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

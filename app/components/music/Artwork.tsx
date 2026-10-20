@@ -2,15 +2,25 @@
 import { Music, Radio } from "lucide-react";
 import { cn } from "@/app/lib/cn";
 import type { Track } from "@/app/lib/player/types";
+import { artworkSrc } from "@/app/lib/player/detect";
 
 /** `fill` stretches the artwork over its positioned parent (used as a background). */
-export function Artwork({ track, className, fill }: { track: Track | null; className?: string; fill?: boolean }) {
+export function Artwork({
+  track,
+  className,
+  fill,
+  style,
+}: {
+  track: Track | null;
+  className?: string;
+  fill?: boolean;
+  style?: React.CSSProperties;
+}) {
   return (
-    <div className={cn(fill ? "absolute inset-0" : "relative shrink-0", "overflow-hidden bg-surface-3", className)}>
+    <div className={cn(fill ? "absolute inset-0" : "relative shrink-0", "overflow-hidden bg-surface-3", className)} style={style}>
       {track?.artwork ? (
         <img
-          // Older queue items stored the letterboxed 4:3 thumbnail; the 16:9 one crops cleanly.
-          src={track.artwork.replace("/hqdefault.jpg", "/mqdefault.jpg")}
+          src={artworkSrc(track.artwork)!}
           alt=""
           className="absolute inset-0 size-full object-cover"
           draggable={false}

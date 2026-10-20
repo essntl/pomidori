@@ -28,7 +28,8 @@ import { timerActions, timerStore } from "@/app/context/TimerContext";
 import { NAV } from "@/app/lib/nav";
 import { useStore } from "@/app/lib/storage";
 import { notesStore, createPage } from "@/app/lib/stores/notes";
-import { tasksStore, addTask, parseQuickAdd } from "@/app/lib/stores/tasks";
+import { INBOX_ID, addTask, parseQuickAdd } from "@/app/lib/stores/tasks";
+import { tasksStore } from "@/app/lib/stores/tasks";
 import { eventsStore } from "@/app/lib/stores/events";
 import { habitsStore } from "@/app/lib/stores/habits";
 import { settingsStore, updateSettings } from "@/app/lib/stores/settings";
@@ -37,7 +38,7 @@ import { detectSource } from "@/app/lib/player/detect";
 import { ambientActions } from "@/app/lib/player/ambient";
 import { intentStore, notesUIStore } from "@/app/lib/intents";
 import { notify } from "@/app/lib/alerts";
-import { fmtDate } from "@/app/lib/date";
+import { fmtDate, relativeDay } from "@/app/lib/date";
 import { cn } from "@/app/lib/cn";
 import { ease, spring } from "@/app/lib/motion";
 import { Kbd } from "../ui/Card";
@@ -52,6 +53,10 @@ type Command = {
   keywords?: string;
   run: () => void;
 };
+
+/** Commands built from the typed text itself always show; a "#List" task goes to the top. */
+const isPinned = (id: string) => id === "add-music" || id.startsWith("quick-task");
+const pinRank = (id: string) => (id === "quick-task-target" ? 3 : id === "add-music" ? 2 : id.startsWith("quick-task") ? -1 : 0);
 
 /** Subsequence fuzzy match; higher is better, -1 means no match. */
 function score(query: string, text: string) {
@@ -120,17 +125,26 @@ export default function CommandPalette() {
       });
     }
     if (q) {
-      list.push({
-        id: "quick-task",
-        group: "Create",
-        label: `Add task: ${q}`,
-        icon: <ListPlus />,
-        run: () => {
-          const parsed = parseQuickAdd(q, tasksStore.get().lists);
-          addTask({ title: parsed.title || q, due: parsed.due, priority: parsed.priority, ...(parsed.listId ? { listId: parsed.listId } : {}) });
-          notify({ title: "Task added", body: parsed.title || q, icon: "✅", tone: "success", duration: 2200 });
-        },
-      });
+      // Tasks: "#List" in the text targets that list; otherwise offer Inbox plus each other list.
+      const parsed = parseQuickAdd(q, tasks.lists);
+      const title = parsed.title || q;
+      const addTo = (listId: string | undefined) => () => {
+        const target = tasks.lists.find((l) => l.id === listId);
+        addTask({ title, due: parsed.due, priority: parsed.priority, ...(listId ? { listId } : {}) });
+        notify({ title: target && target.id !== INBOX_ID ? `Task added to ${target.name}` : "Task added", body: title, icon: "✅", tone: "success", duration: 2200 });
+      };
+      const extras = [parsed.due && relativeDay(parsed.due), parsed.priority > 0 && ["", "low", "medium", "high"][parsed.priority] + " priority"]
+        .filter(Boolean)
+        .join(" · ");
+      if (parsed.listId) {
+        const target = tasks.lists.find((l) => l.id === parsed.listId)!;
+        list.push({ id: "quick-task-target", group: "Create", label: `Add task to ${target.name}: ${title}`, hint: extras || undefined, icon: <ListPlus />, run: addTo(parsed.listId) });
+      } else {
+        list.push({ id: "quick-task", group: "Create", label: `Add task: ${title}`, hint: extras || "Inbox", icon: <ListPlus />, run: addTo(undefined) });
+        for (const l of tasks.lists.filter((l) => l.id !== INBOX_ID).slice(0, 5)) {
+          list.push({ id: `quick-task-${l.id}`, group: "Create", label: `Add task to ${l.name}: ${title}`, hint: extras || undefined, icon: <ListPlus />, run: addTo(l.id) });
+        }
+      }
     }
 
     list.push(
@@ -234,12 +248,9 @@ export default function CommandPalette() {
 
     if (!q) return list.filter((c) => c.group !== "Notes");
     return list
-      .map((c) => ({ c, s: c.id === "quick-task" || c.id === "add-music" ? 1 : Math.max(score(q, c.label), score(q, c.keywords ?? "") - 20) }))
-      .filter((x) => x.s >= 0 && (x.s > 0 || x.c.id === "quick-task" || x.c.id === "add-music"))
-      .sort((a, b) => {
-        const pinned = (id: string) => (id === "add-music" ? 2 : id === "quick-task" ? -1 : 0);
-        return pinned(b.c.id) - pinned(a.c.id) || b.s - a.s;
-      })
+      .map((c) => ({ c, s: isPinned(c.id) ? 1 : Math.max(score(q, c.label), score(q, c.keywords ?? "") - 20) }))
+      .filter((x) => x.s >= 0 && (x.s > 0 || isPinned(x.c.id)))
+      .sort((a, b) => pinRank(b.c.id) - pinRank(a.c.id) || b.s - a.s)
       .slice(0, 40)
       .map((x) => x.c);
   }, [query, notes, tasks, events, habits, timerStatus, musicStatus, router]);
@@ -300,7 +311,7 @@ export default function CommandPalette() {
                     setActive(0);
                   }}
                   onKeyDown={onKeyDown}
-                  placeholder="Search, create a task, paste a music link…"
+                  placeholder="Search, add a task (#list, tomorrow, !high), paste a music link…"
                   className="h-14 flex-1 bg-transparent text-[16px] text-fg outline-none placeholder:text-muted"
                   aria-label="Command"
                 />

@@ -1,8 +1,9 @@
 import { createMemoryStore, createStore } from "../storage";
 import { uid } from "../id";
 import { notify } from "../alerts";
+import { settingsStore } from "../stores/settings";
 import type { Adapter, AdapterEvents, AdapterState, SourceKind, Track } from "./types";
-import { detectSource, fetchOEmbed, youtubeThumb } from "./detect";
+import { artworkSrc, detectSource, fetchOEmbed, youtubeThumb } from "./detect";
 import { YouTubeAdapter, expandYouTubePlaylist } from "./youtube";
 import { SoundCloudAdapter } from "./soundcloud";
 import { AudioAdapter } from "./audio";
@@ -52,6 +53,35 @@ let activeSource: SourceKind | null = null;
 let poll: ReturnType<typeof setInterval> | null = null;
 let lastAnnounced: string | null = null;
 
+/*
+ * Whether the user wants music playing. Some players (notably YouTube's mobile player) pause
+ * themselves when the page is hidden; a pause we didn't ask for is undone automatically.
+ */
+let wantsPlayback = false;
+let resumeTries = 0;
+let resumeTimer: ReturnType<typeof setTimeout> | null = null;
+
+function resumeIfInterrupted() {
+  if (!wantsPlayback || resumeTimer || resumeTries >= 4) return;
+  resumeTimer = setTimeout(() => {
+    resumeTimer = null;
+    const t = currentTrack();
+    const s = playerRuntime.get().status;
+    if (!wantsPlayback || !t || s === "playing" || s === "buffering") return;
+    resumeTries++;
+    adapterFor(t.source).play();
+  }, 300);
+}
+
+if (typeof document !== "undefined") {
+  // Coming back to the tab: pick up again if something paused us while we were away.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    resumeTries = 0;
+    if (wantsPlayback && playerRuntime.get().status === "paused") resumeIfInterrupted();
+  });
+}
+
 function setRuntime(patch: Partial<PlayerRuntime>) {
   playerRuntime.set((r) => ({ ...r, ...patch }));
 }
@@ -61,8 +91,31 @@ function currentTrack(): Track | null {
   return queue[index] ?? null;
 }
 
+/** Update a track's metadata wherever it lives (queue or a playlist). */
 function patchTrack(id: string, patch: Partial<Track>) {
-  playerStore.set((p) => ({ ...p, queue: p.queue.map((t) => (t.id === id ? { ...t, ...patch } : t)) }));
+  playerStore.set((p) => ({
+    ...p,
+    queue: p.queue.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+    playlists: p.playlists.map((pl) => (pl.tracks.some((t) => t.id === id) ? { ...pl, tracks: pl.tracks.map((t) => (t.id === id ? { ...t, ...patch } : t)) } : pl)),
+  }));
+}
+
+function updatePlaylist(id: string, fn: (pl: SavedPlaylist) => SavedPlaylist) {
+  playerStore.set((p) => ({ ...p, playlists: p.playlists.map((pl) => (pl.id === id ? fn(pl) : pl)) }));
+}
+
+/** Tracks get fresh ids when copied between the queue and playlists so each list can reorder independently. */
+function copyTrack(t: Track): Track {
+  return { ...t, id: uid() };
+}
+
+function shuffled<T>(items: T[]) {
+  const a = [...items];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 function eventsFor(source: SourceKind): AdapterEvents {
@@ -71,17 +124,21 @@ function eventsFor(source: SourceKind): AdapterEvents {
       if (activeSource !== source) return;
       setRuntime({ status: state, error: state === "playing" ? null : playerRuntime.get().error });
       if (state === "playing") {
+        resumeTries = 0;
         startPolling();
         const t = currentTrack();
         if (t && lastAnnounced !== t.id) {
           lastAnnounced = t.id;
-          notify({ title: t.title, body: t.artist || undefined, icon: "🎵", tone: "info", duration: 2400 });
+          if (settingsStore.get().music.trackAlerts) {
+            notify({ title: t.title, body: t.artist || undefined, icon: "🎵", image: artworkSrc(t.artwork), tone: "info", duration: 2400 });
+          }
         }
       } else if (state === "ended") {
         stopPolling();
         handleEnded();
       } else if (state === "paused") {
         sample();
+        resumeIfInterrupted();
       }
       updateMediaSession();
     },
@@ -100,6 +157,7 @@ function eventsFor(source: SourceKind): AdapterEvents {
     },
     onError(message) {
       if (activeSource !== source) return;
+      wantsPlayback = false;
       setRuntime({ error: message, status: "paused" });
       notify({ title: "Can't play this", body: message, icon: "⚠️", tone: "danger", duration: 4000 });
     },
@@ -144,6 +202,8 @@ function loadIndex(index: number, autoplay: boolean) {
   playerStore.set((p) => ({ ...p, index }));
   if (activeSource && activeSource !== track.source) adapters[activeSource]?.stop();
   activeSource = track.source;
+  wantsPlayback = autoplay;
+  resumeTries = 0;
   setRuntime({ position: 0, duration: 0, loaded: true, error: null, status: autoplay ? "buffering" : "paused" });
   adapterFor(track.source).load(track, autoplay);
   updateMediaSession();
@@ -173,6 +233,7 @@ function handleEnded() {
   }
   const n = nextIndex(1);
   if (n === null) {
+    wantsPlayback = false;
     setRuntime({ status: "paused", position: 0 });
     return;
   }
@@ -195,7 +256,7 @@ function updateMediaSession() {
     album: "Pomidori",
     artwork: t.artwork ? [{ src: t.artwork, sizes: "480x360" }] : [],
   });
-  navigator.mediaSession.playbackState = status === "playing" ? "playing" : "paused";
+  navigator.mediaSession.playbackState = status === "playing" || wantsPlayback ? "playing" : "paused";
 }
 
 let mediaSessionBound = false;
@@ -306,6 +367,7 @@ export const player = {
         title: tracks.length > 1 ? `Added ${tracks.length} tracks` : "Added to queue",
         body: tracks.length === 1 ? tracks[0].title : undefined,
         icon: "➕",
+        image: tracks.length === 1 ? artworkSrc(tracks[0].artwork) : null,
         tone: "info",
         duration: 2200,
       });
@@ -333,9 +395,12 @@ export const player = {
       loadIndex(playerStore.get().index, true);
       return;
     }
+    wantsPlayback = true;
+    resumeTries = 0;
     adapterFor(t.source).play();
   },
   pause() {
+    wantsPlayback = false;
     if (activeSource) adapters[activeSource]?.pause();
   },
   toggle() {
@@ -386,6 +451,7 @@ export const player = {
       const wasPlaying = playerRuntime.get().status === "playing";
       if (queueNext.length && wasPlaying) loadIndex(newIndex, true);
       else {
+        wantsPlayback = false;
         if (activeSource) adapters[activeSource]?.stop();
         setRuntime({ status: "unstarted", loaded: false, position: 0, duration: 0 });
       }
@@ -400,25 +466,86 @@ export const player = {
     });
   },
   clear() {
+    wantsPlayback = false;
     if (activeSource) adapters[activeSource]?.stop();
     playerStore.set((p) => ({ ...p, queue: [], index: 0 }));
     setRuntime({ status: "unstarted", loaded: false, position: 0, duration: 0, error: null });
     lastAnnounced = null;
     updateMediaSession();
   },
+  /* ───────────── playlists ───────────── */
+
+  createPlaylist(name: string, tracks: Track[] = []) {
+    const pl: SavedPlaylist = { id: uid(), name: name.trim() || "New playlist", tracks: tracks.map(copyTrack) };
+    playerStore.set((p) => ({ ...p, playlists: [...p.playlists, pl] }));
+    return pl;
+  },
   savePlaylist(name: string) {
     const tracks = playerStore.get().queue;
-    if (!tracks.length) return;
-    playerStore.set((p) => ({ ...p, playlists: [...p.playlists, { id: uid(), name, tracks }] }));
+    if (!tracks.length) return null;
+    return player.createPlaylist(name, tracks);
   },
-  loadPlaylist(id: string) {
-    const pl = playerStore.get().playlists.find((p) => p.id === id);
-    if (!pl) return;
-    if (activeSource) adapters[activeSource]?.stop();
-    playerStore.set((p) => ({ ...p, queue: pl.tracks.map((t) => ({ ...t, id: uid() })), index: 0 }));
-    loadIndex(0, true);
+  renamePlaylist(id: string, name: string) {
+    if (!name.trim()) return;
+    updatePlaylist(id, (pl) => ({ ...pl, name: name.trim() }));
   },
   deletePlaylist(id: string) {
     playerStore.set((p) => ({ ...p, playlists: p.playlists.filter((pl) => pl.id !== id) }));
+  },
+  /** Replace the queue with the playlist and start playing (optionally shuffled). */
+  loadPlaylist(id: string, opts: { shuffle?: boolean; startAt?: number } = {}) {
+    const pl = playerStore.get().playlists.find((p) => p.id === id);
+    if (!pl || !pl.tracks.length) return;
+    if (activeSource) adapters[activeSource]?.stop();
+    let tracks = pl.tracks.map(copyTrack);
+    if (opts.shuffle) tracks = shuffled(tracks);
+    playerStore.set((p) => ({ ...p, queue: tracks, index: 0 }));
+    loadIndex(opts.shuffle ? 0 : Math.min(opts.startAt ?? 0, tracks.length - 1), true);
+  },
+  /** Add the playlist's tracks to the end of the queue. */
+  appendPlaylist(id: string) {
+    const pl = playerStore.get().playlists.find((p) => p.id === id);
+    if (!pl || !pl.tracks.length) return;
+    const wasIdle = !playerRuntime.get().loaded || !playerStore.get().queue.length;
+    const startAt = playerStore.get().queue.length;
+    playerStore.set((p) => ({ ...p, queue: [...p.queue, ...pl.tracks.map(copyTrack)] }));
+    notify({ title: `Queued ${pl.tracks.length} track${pl.tracks.length === 1 ? "" : "s"}`, body: pl.name, icon: "➕", tone: "info", duration: 2200 });
+    if (wasIdle) loadIndex(startAt, true);
+  },
+  addToPlaylist(id: string, track: Track) {
+    const pl = playerStore.get().playlists.find((p) => p.id === id);
+    if (!pl) return;
+    if (pl.tracks.some((t) => t.source === track.source && t.ref === track.ref)) {
+      notify({ title: "Already in playlist", body: pl.name, icon: "📃", tone: "info", duration: 2000 });
+      return;
+    }
+    updatePlaylist(id, (p) => ({ ...p, tracks: [...p.tracks, copyTrack(track)] }));
+    notify({ title: `Added to ${pl.name}`, body: track.title, icon: "📃", image: artworkSrc(track.artwork), tone: "success", duration: 2200 });
+  },
+  /** Paste a link straight into a playlist (YouTube playlists expand into tracks). */
+  async addUrlToPlaylist(id: string, input: string) {
+    setRuntime({ adding: true });
+    try {
+      const tracks = await buildTracks(input);
+      updatePlaylist(id, (p) => ({ ...p, tracks: [...p.tracks, ...tracks] }));
+      hydrateTitles(tracks);
+      return tracks;
+    } finally {
+      setRuntime({ adding: false });
+    }
+  },
+  removeFromPlaylist(id: string, trackId: string) {
+    updatePlaylist(id, (p) => ({ ...p, tracks: p.tracks.filter((t) => t.id !== trackId) }));
+  },
+  reorderPlaylist(id: string, ids: string[]) {
+    updatePlaylist(id, (p) => {
+      const byId = new Map(p.tracks.map((t) => [t.id, t]));
+      return { ...p, tracks: ids.map((x) => byId.get(x)!).filter(Boolean) };
+    });
+  },
+  /** Overwrite a playlist with the current queue. */
+  replacePlaylistWithQueue(id: string) {
+    const queue = playerStore.get().queue;
+    updatePlaylist(id, (p) => ({ ...p, tracks: queue.map(copyTrack) }));
   },
 };

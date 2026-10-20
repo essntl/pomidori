@@ -5,6 +5,7 @@ import { AnimatePresence, Reorder, motion, useDragControls } from "framer-motion
 import {
   GripVertical,
   ListMusic,
+  ListPlus,
   Loader2,
   MoreHorizontal,
   Pause,
@@ -23,9 +24,9 @@ import {
   Waves,
   X,
 } from "lucide-react";
-import { useAmbient, usePlayer } from "@/app/context/hooks";
+import { useAmbient, usePlayer, useSettings } from "@/app/context/hooks";
 import { useHydrated } from "@/app/lib/storage";
-import { player } from "@/app/lib/player/controller";
+import { player, type SavedPlaylist } from "@/app/lib/player/controller";
 import { SOURCE_LABEL } from "@/app/lib/player/detect";
 import { AMBIENT_KINDS, ambientActions } from "@/app/lib/player/ambient";
 import type { Track } from "@/app/lib/player/types";
@@ -39,6 +40,9 @@ import { Menu } from "@/app/components/ui/Menu";
 import { Modal } from "@/app/components/ui/Modal";
 import { Switch } from "@/app/components/ui/Switch";
 import { Artwork, fmtSeconds } from "@/app/components/music/Artwork";
+import { NowPlayingArt } from "@/app/components/music/NowPlayingArt";
+import { PlaylistsPanel } from "@/app/components/music/PlaylistsPanel";
+import { Segmented } from "@/app/components/ui/Segmented";
 import { Equalizer } from "@/app/components/ui/Rolling";
 
 const SOURCE_DOT: Record<Track["source"], string> = {
@@ -47,7 +51,21 @@ const SOURCE_DOT: Record<Track["source"], string> = {
   audio: "#3b82f6",
 };
 
-function QueueItem({ track, index, current, playing }: { track: Track; index: number; current: boolean; playing: boolean }) {
+function QueueItem({
+  track,
+  index,
+  current,
+  playing,
+  playlists,
+  onNewPlaylist,
+}: {
+  track: Track;
+  index: number;
+  current: boolean;
+  playing: boolean;
+  playlists: SavedPlaylist[];
+  onNewPlaylist: (track: Track) => void;
+}) {
   const controls = useDragControls();
   return (
     <Reorder.Item
@@ -86,9 +104,19 @@ function QueueItem({ track, index, current, playing }: { track: Track; index: nu
             {track.artist && <span className="truncate">· {track.artist}</span>}
           </div>
         </div>
-        <IconButton size="sm" label="Remove from queue" onClick={() => player.remove(track.id)} className="opacity-0 group-hover:opacity-100 max-md:opacity-100">
-          <X />
-        </IconButton>
+        <Menu
+          trigger={(t) => (
+            <IconButton size="sm" label="Track options" className="opacity-0 group-hover:opacity-100 aria-expanded:opacity-100 max-md:opacity-100" {...t}>
+              <MoreHorizontal />
+            </IconButton>
+          )}
+          items={[
+            ...playlists.map((pl) => ({ label: `Add to ${pl.name}`, icon: <ListPlus />, onSelect: () => player.addToPlaylist(pl.id, track) })),
+            { label: "New playlist with this song", icon: <Plus />, onSelect: () => onNewPlaylist(track) },
+            "separator",
+            { label: "Remove from queue", icon: <X />, danger: true, onSelect: () => player.remove(track.id) },
+          ]}
+        />
       </div>
     </Reorder.Item>
   );
@@ -100,8 +128,25 @@ export default function MusicPage() {
   const ambient = useAmbient();
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [saveOpen, setSaveOpen] = useState(false);
+  const [tab, setTab] = useState<"queue" | "playlists">("queue");
+  const [nameDialog, setNameDialog] = useState<{ mode: "new" | "save" | "rename"; id?: string; track?: Track } | null>(null);
   const [plName, setPlName] = useState("");
+  const music = useSettings().music;
+
+  const askName = (req: { mode: "new" | "save" | "rename"; id?: string; initial?: string; track?: Track }) => {
+    setPlName(req.initial ?? "");
+    setNameDialog({ mode: req.mode, id: req.id, track: req.track });
+  };
+
+  function submitName() {
+    const name = plName.trim();
+    if (!name || !nameDialog) return;
+    if (nameDialog.mode === "rename" && nameDialog.id) player.renamePlaylist(nameDialog.id, name);
+    else if (nameDialog.mode === "save") player.savePlaylist(name);
+    else player.createPlaylist(name, nameDialog.track ? [nameDialog.track] : []);
+    if (nameDialog.mode !== "rename") setTab("playlists");
+    setNameDialog(null);
+  }
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -126,17 +171,9 @@ export default function MusicPage() {
         <div className="flex flex-col gap-4">
           {/* Now playing */}
           <Card className="relative overflow-hidden p-5">
-            {p.track?.artwork && <Artwork track={p.track} fill className="scale-125 opacity-25 blur-3xl" />}
+            {music.blurBackdrop && p.track?.artwork && <Artwork track={p.track} fill className="scale-125 opacity-25 blur-3xl" />}
             <div className="relative">
-              <motion.div
-                key={p.track?.id ?? "none"}
-                initial={{ opacity: 0, scale: 0.94 }}
-                animate={{ opacity: 1, scale: p.playing ? 1 : 0.94 }}
-                transition={spring.smooth}
-                className="mx-auto aspect-square w-full max-w-[300px] overflow-hidden rounded-[1.5rem] shadow-pop"
-              >
-                <Artwork track={p.track} className="size-full" />
-              </motion.div>
+              <NowPlayingArt track={p.track} playing={p.playing} variant={music.artworkStyle} className="mx-auto w-full max-w-[300px]" />
               <div className="mt-5 min-h-[52px] text-center">
                 <div className="line-clamp-2 text-lg leading-snug font-extrabold text-fg">{p.track?.title ?? "Nothing playing"}</div>
                 <div className="truncate text-sm text-muted">{p.track ? p.track.artist || SOURCE_LABEL[p.track.source] : "Paste a link below to start"}</div>
@@ -205,7 +242,7 @@ export default function MusicPage() {
           {/* Ambient */}
           <Card>
             <CardHeader title="Ambient sound" icon={<Waves />} action={<Switch label="Ambient sound" checked={ambient.enabled} onChange={ambientActions.toggle} />} />
-            <div className="px-5 pb-5">
+            <div className="px-4 pb-4">
               <div className="grid grid-cols-5 gap-2">
                 {AMBIENT_KINDS.map((k) => (
                   <button
@@ -233,6 +270,34 @@ export default function MusicPage() {
 
         {/* Queue */}
         <Card className="min-w-0 p-3 sm:p-4">
+          <div className="mb-3 flex items-center justify-between gap-2 px-1">
+            <Segmented
+              value={tab}
+              onChange={setTab}
+              options={[
+                { value: "queue", label: <>Queue <span className="text-[11px] text-muted tabular-nums">{p.queue.length}</span></> },
+                { value: "playlists", label: <>Playlists <span className="text-[11px] text-muted tabular-nums">{p.playlists.length}</span></> },
+              ]}
+            />
+            {tab === "queue" && (
+              <Menu
+                trigger={(t) => (
+                  <IconButton size="sm" label="Queue options" {...t}>
+                    <MoreHorizontal />
+                  </IconButton>
+                )}
+                items={[
+                  { label: "Save queue as playlist", icon: <Save />, onSelect: () => askName({ mode: "save" }) },
+                  { label: "Clear queue", icon: <Trash2 />, danger: true, onSelect: player.clear },
+                ]}
+              />
+            )}
+          </div>
+
+          {tab === "playlists" ? (
+            <PlaylistsPanel playlists={p.playlists} queueLength={p.queue.length} adding={p.adding} onRequestName={askName} />
+          ) : (
+          <>
           <form onSubmit={add} className="mb-1">
             <div className="flex items-center gap-2 rounded-2xl border border-line bg-surface-2 py-1.5 pr-1.5 pl-4 focus-within:border-accent/50 focus-within:ring-4 focus-within:ring-accent/10">
               <Plus className="size-5 shrink-0 text-muted" />
@@ -260,38 +325,7 @@ export default function MusicPage() {
             </AnimatePresence>
           </form>
 
-          <div className="mt-3 mb-2 flex items-center justify-between px-1">
-            <h2 className="flex items-center gap-2 text-lg font-extrabold text-fg">
-              Queue <span className="text-sm font-bold text-muted">{p.queue.length}</span>
-            </h2>
-            <div className="flex items-center gap-1">
-              {p.playlists.length > 0 && (
-                <Menu
-                  trigger={(t) => (
-                    <Button size="sm" variant="ghost" {...t}>
-                      <ListMusic className="size-4" /> Playlists
-                    </Button>
-                  )}
-                  items={p.playlists.flatMap((pl) => [
-                    { label: `${pl.name} (${pl.tracks.length})`, icon: <Play />, onSelect: () => player.loadPlaylist(pl.id) },
-                    { label: `Delete “${pl.name}”`, icon: <Trash2 />, danger: true, onSelect: () => player.deletePlaylist(pl.id) },
-                  ])}
-                />
-              )}
-              <Menu
-                trigger={(t) => (
-                  <IconButton size="sm" label="Queue options" {...t}>
-                    <MoreHorizontal />
-                  </IconButton>
-                )}
-                items={[
-                  { label: "Save queue as playlist", icon: <Save />, onSelect: () => setSaveOpen(true) },
-                  { label: "Clear queue", icon: <Trash2 />, danger: true, onSelect: player.clear },
-                ]}
-              />
-            </div>
-          </div>
-
+          <div className="mt-2" />
           {!hydrated ? null : p.queue.length === 0 ? (
             <EmptyState
               icon={<ListMusic />}
@@ -302,26 +336,36 @@ export default function MusicPage() {
             <Reorder.Group axis="y" values={p.queue.map((t) => t.id)} onReorder={player.reorder} className="flex flex-col">
               <AnimatePresence initial={false}>
                 {p.queue.map((t, i) => (
-                  <QueueItem key={t.id} track={t} index={i} current={i === p.index && p.loaded} playing={p.playing} />
+                  <QueueItem
+                    key={t.id}
+                    track={t}
+                    index={i}
+                    current={i === p.index && p.loaded}
+                    playing={p.playing}
+                    playlists={p.playlists}
+                    onNewPlaylist={(track) => askName({ mode: "new", track })}
+                  />
                 ))}
               </AnimatePresence>
             </Reorder.Group>
+          )}
+          </>
           )}
         </Card>
       </div>
 
       <Modal
-        open={saveOpen}
-        onClose={() => setSaveOpen(false)}
-        title="Save playlist"
+        open={!!nameDialog}
+        onClose={() => setNameDialog(null)}
+        title={nameDialog?.mode === "rename" ? "Rename playlist" : nameDialog?.mode === "save" ? "Save queue as playlist" : "New playlist"}
         size="sm"
         footer={
           <>
-            <Button variant="ghost" onClick={() => setSaveOpen(false)}>
+            <Button variant="ghost" onClick={() => setNameDialog(null)}>
               Cancel
             </Button>
             <Button variant="primary" type="submit" form="pl-form" disabled={!plName.trim()}>
-              Save
+              {nameDialog?.mode === "rename" ? "Rename" : "Save"}
             </Button>
           </>
         }
@@ -330,13 +374,11 @@ export default function MusicPage() {
           id="pl-form"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!plName.trim()) return;
-            player.savePlaylist(plName.trim());
-            setPlName("");
-            setSaveOpen(false);
+            submitName();
           }}
         >
           <Input data-autofocus value={plName} onChange={(e) => setPlName(e.target.value)} placeholder="e.g. Deep focus, Lo-fi mornings" />
+          {nameDialog?.track && <p className="mt-2 text-xs text-muted">Starts with “{nameDialog.track.title}”.</p>}
         </form>
       </Modal>
     </div>

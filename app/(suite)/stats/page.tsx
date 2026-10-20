@@ -93,13 +93,13 @@ export default function StatsPage() {
               />
             }
           />
-          <div className="px-5 pt-6 pb-5">
+          <div className="px-4 pt-6 pb-5">
             <BarChart data={bars} />
           </div>
         </Card>
         <Card>
           <CardHeader title="Top tasks" icon={<Target />} />
-          <div className="px-5 pb-5">
+          <div className="px-4 pb-4">
             {topTasks.length === 0 ? (
               <p className="text-sm text-muted">Pick a task on the Focus page to see where your time goes.</p>
             ) : (
@@ -123,7 +123,7 @@ export default function StatsPage() {
 
       <Card className="mt-4">
         <CardHeader title="Last 6 months" icon={<Grid3x3 />} />
-        <div className="px-5 pb-5">
+        <div className="px-4 pb-4">
           <Heatmap weeks={weeks} />
         </div>
       </Card>

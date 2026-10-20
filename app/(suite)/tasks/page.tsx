@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { AnimatePresence, Reorder, motion, useDragControls } from "framer-motion";
-import { CalendarDays, CalendarClock, CheckCheck, Inbox, MoreHorizontal, Pencil, Plus, Sparkles, SquareCheckBig, Sun, Trash2 } from "lucide-react";
-import { useHydrated, useStore } from "@/app/lib/storage";
+import { CalendarDays, CalendarClock, CheckCheck, ChevronDown, Inbox, List as ListIcon, MoreHorizontal, Pencil, Plus, Sparkles, SquareCheckBig, Sun, Trash2 } from "lucide-react";
+import { createMemoryStore, useHydrated, useStore } from "@/app/lib/storage";
+import { notify } from "@/app/lib/alerts";
 import {
   INBOX_ID,
   addList,
@@ -13,6 +14,7 @@ import {
   renameList,
   reorderTasks,
   tasksStore,
+  updateTask,
   type Task,
 } from "@/app/lib/stores/tasks";
 import { dayKey, relativeDay } from "@/app/lib/date";
@@ -22,11 +24,21 @@ import { Card, EmptyState, PageHeader } from "@/app/components/ui/Card";
 import { Button, IconButton } from "@/app/components/ui/Button";
 import { Input } from "@/app/components/ui/Field";
 import { Menu } from "@/app/components/ui/Menu";
+import { Segmented } from "@/app/components/ui/Segmented";
 import { Modal } from "@/app/components/ui/Modal";
 import { DragGrip, PRIORITY_COLOR, TaskRow } from "@/app/components/tasks/TaskRow";
 import { TaskDetail } from "@/app/components/tasks/TaskDetail";
 
 type View = "today" | "upcoming" | "completed" | `list:${string}`;
+
+/** Which sidebar list a task is currently being dragged over (to move it there on drop). */
+const dropTargetStore = createMemoryStore<string | null>(null);
+
+function listUnderPointer(point: { x: number; y: number }) {
+  const els = document.elementsFromPoint(point.x - window.scrollX, point.y - window.scrollY);
+  const el = els.find((e) => e instanceof HTMLElement && e.dataset.dropList) as HTMLElement | undefined;
+  return el?.dataset.dropList ?? null;
+}
 
 function ReorderItem({ task, children }: { task: Task; children: (grip: React.ReactNode) => React.ReactNode }) {
   const controls = useDragControls();
@@ -35,6 +47,19 @@ function ReorderItem({ task, children }: { task: Task; children: (grip: React.Re
       value={task.id}
       dragListener={false}
       dragControls={controls}
+      onDrag={(_, info) => {
+        const target = listUnderPointer(info.point);
+        if (target !== dropTargetStore.get()) dropTargetStore.set(target);
+      }}
+      onDragEnd={(_, info) => {
+        const target = listUnderPointer(info.point);
+        dropTargetStore.set(null);
+        if (target && target !== task.listId) {
+          const list = tasksStore.get().lists.find((l) => l.id === target);
+          updateTask(task.id, { listId: target });
+          notify({ title: `Moved to ${list?.name ?? "list"}`, body: task.title, icon: "📥", tone: "info", duration: 2200 });
+        }
+      }}
       layout="position"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -51,6 +76,7 @@ function ReorderItem({ task, children }: { task: Task; children: (grip: React.Re
 export default function TasksPage() {
   const hydrated = useHydrated();
   const { lists, tasks } = useStore(tasksStore);
+  const dropTarget = useStore(dropTargetStore);
   const [view, setView] = useState<View>("today");
   const [input, setInput] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
@@ -109,7 +135,7 @@ export default function TasksPage() {
     <div>
       <PageHeader title="Tasks" subtitle="Capture everything. Do what matters today." />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_minmax(0,1fr)]">
-        <Card className="self-start p-2">
+        <Card className="self-start p-2 max-md:hidden">
           <nav className="flex gap-1 overflow-x-auto md:flex-col">
             {navItems.map((n) => (
               <NavButton key={n.id} active={view === n.id} onClick={() => setView(n.id)} icon={n.icon} label={n.label} count={n.count} />
@@ -125,6 +151,8 @@ export default function TasksPage() {
             {lists.map((l) => (
               <NavButton
                 key={l.id}
+                dropId={l.id}
+                dropActive={dropTarget === l.id}
                 active={view === `list:${l.id}`}
                 onClick={() => setView(`list:${l.id}`)}
                 icon={l.id === INBOX_ID ? <Inbox /> : <span className="size-2.5 rounded-full" style={{ background: l.color }} />}
@@ -141,6 +169,50 @@ export default function TasksPage() {
             </button>
           </nav>
         </Card>
+
+        {/* Phones: one compact row instead of the sidebar. */}
+        <div className="flex items-center gap-2 md:hidden">
+          <Segmented<View>
+            value={view}
+            onChange={setView}
+            className="min-w-0 flex-1"
+            options={[
+              { value: "today", label: <>Today{counts.today > 0 && <span className="text-[11px] text-muted tabular-nums">{counts.today}</span>}</> },
+              { value: "upcoming", label: "Upcoming" },
+              { value: "completed", label: "Done" },
+            ]}
+          />
+          <Menu
+            trigger={(t) => (
+              <button
+                type="button"
+                className={cn(
+                  "flex h-10 max-w-36 shrink-0 items-center gap-1.5 rounded-control px-3 text-[13px] font-semibold transition-colors",
+                  activeList ? "bg-accent-soft text-accent" : "bg-surface-2 text-fg-2",
+                )}
+                {...t}
+              >
+                {activeList ? (
+                  activeList.id === INBOX_ID ? <Inbox className="size-4 shrink-0" /> : <span className="size-2.5 shrink-0 rounded-full" style={{ background: activeList.color }} />
+                ) : (
+                  <ListIcon className="size-4 shrink-0" />
+                )}
+                <span className="truncate">{activeList?.name ?? "Lists"}</span>
+                <ChevronDown className="size-3.5 shrink-0 opacity-70" />
+              </button>
+            )}
+            items={[
+              ...lists.map((l) => ({
+                label: l.name,
+                hint: String(tasks.filter((t) => !t.done && t.listId === l.id).length || ""),
+                icon: l.id === INBOX_ID ? <Inbox /> : <span className="size-2.5 rounded-full" style={{ background: l.color }} />,
+                onSelect: () => setView(`list:${l.id}`),
+              })),
+              "separator",
+              { label: "New list", icon: <Plus />, onSelect: () => setListModal({ id: null, name: "" }) },
+            ]}
+          />
+        </div>
 
         <Card className="min-w-0 p-3 sm:p-4">
           <div className="mb-3 flex items-center justify-between px-1">
@@ -224,7 +296,7 @@ export default function TasksPage() {
                   <AnimatePresence initial={false}>
                     {items.map((t) => (
                       <motion.div key={t.id} layout exit={{ opacity: 0, x: -12 }} transition={spring.smooth}>
-                        <TaskRow task={t} list={listById.get(t.listId)} showList onOpen={() => setOpenId(t.id)} />
+                        <TaskRow task={t} list={listById.get(t.listId)} lists={lists} showList onOpen={() => setOpenId(t.id)} />
                       </motion.div>
                     ))}
                   </AnimatePresence>
@@ -236,7 +308,7 @@ export default function TasksPage() {
               <AnimatePresence initial={false}>
                 {visible.map((t) => (
                   <ReorderItem key={t.id} task={t}>
-                    {(grip) => <TaskRow task={t} dragHandle={grip} onOpen={() => setOpenId(t.id)} />}
+                    {(grip) => <TaskRow task={t} lists={lists} dragHandle={grip} onOpen={() => setOpenId(t.id)} />}
                   </ReorderItem>
                 ))}
               </AnimatePresence>
@@ -253,7 +325,7 @@ export default function TasksPage() {
                     exit={{ opacity: 0, x: -12, transition: { duration: 0.15 } }}
                     transition={spring.smooth}
                   >
-                    <TaskRow task={t} list={listById.get(t.listId)} showList onOpen={() => setOpenId(t.id)} />
+                    <TaskRow task={t} list={listById.get(t.listId)} lists={lists} showList onOpen={() => setOpenId(t.id)} />
                   </motion.div>
                 ))}
               </AnimatePresence>
@@ -305,14 +377,33 @@ export default function TasksPage() {
   );
 }
 
-function NavButton({ active, onClick, icon, label, count }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string; count?: number }) {
+function NavButton({
+  active,
+  onClick,
+  icon,
+  label,
+  count,
+  dropId,
+  dropActive,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  count?: number;
+  /** Lists accept tasks dragged by their grip. */
+  dropId?: string;
+  dropActive?: boolean;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
+      data-drop-list={dropId}
       className={cn(
         "relative flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[14px] font-semibold transition-colors [&_svg]:size-[18px]",
         active ? "text-fg" : "text-fg-2 hover:bg-surface-2",
+        dropActive && "bg-accent-soft text-accent ring-1 ring-accent/50",
       )}
     >
       {active && <motion.span layoutId="tasks-nav" transition={spring.snappy} className="absolute inset-0 rounded-xl bg-surface-3" />}

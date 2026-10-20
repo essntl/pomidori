@@ -42,17 +42,17 @@ export default function FocusPage() {
   return (
     <div>
       <PageHeader title="Focus" subtitle="Work in focused sprints, rest on purpose." />
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <Card className="flex flex-col items-center px-4 py-8 sm:py-10">
+      <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <Card className="flex flex-col items-center px-4 py-6">
           <TimerDial />
-          <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <div className="mt-4 flex flex-wrap justify-center gap-1.5">
             {[1, 5, 10].map((m) => (
               <Button key={m} size="sm" variant="secondary" onClick={() => t.addMinutes(m)}>
                 +{m} min
               </Button>
             ))}
           </div>
-          <div className="mt-6 hidden flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted sm:flex">
+          <div className="mt-4 hidden flex-wrap items-center justify-center gap-x-3.5 gap-y-1 text-[11px] text-muted sm:flex">
             <span><Kbd>Space</Kbd> start / pause</span>
             <span><Kbd>R</Kbd> reset</span>
             <span><Kbd>S</Kbd> skip</span>
@@ -60,15 +60,11 @@ export default function FocusPage() {
           </div>
         </Card>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           <Card>
             <CardHeader title="Focusing on" icon={<Target />} />
-            <div className="px-5 pb-5">
-              <Select
-                value={t.taskId ?? ""}
-                onChange={(e) => t.setTask(e.target.value || null)}
-                aria-label="Task to focus on"
-              >
+            <div className="px-4 pb-3">
+              <Select value={t.taskId ?? ""} onChange={(e) => t.setTask(e.target.value || null)} aria-label="Task to focus on">
                 <option value="">Nothing in particular</option>
                 {current?.done && <option value={current.id}>{current.title} (done)</option>}
                 {openTasks.map((x) => (
@@ -78,51 +74,52 @@ export default function FocusPage() {
                 ))}
               </Select>
               {openTasks.length === 0 && (
-                <p className="mt-2 text-xs text-muted">
-                  Add tasks in <Link href="/tasks" className="font-semibold text-accent">Tasks</Link> to track focus time per task.
+                <p className="mt-1.5 text-xs text-muted">
+                  Add tasks in <Link href="/tasks" className="font-semibold text-accent">Tasks</Link> to track time per task.
                 </p>
               )}
             </div>
-          </Card>
-
-          <Card>
-            <CardHeader title="Today" icon={<Flame />} action={<span className="text-sm font-bold text-fg tabular-nums">{fmtDuration(todayMinutes)}</span>} />
-            <div className="max-h-56 overflow-y-auto px-3 pb-3">
+            <div className="border-t border-line px-4 pt-2.5 pb-3">
+              <div className="flex items-center justify-between text-[12px] font-bold tracking-wider text-muted uppercase">
+                <span className="flex items-center gap-1.5">
+                  <Flame className="size-[15px]" /> Today
+                </span>
+                <span className="text-[13px] tracking-normal text-fg normal-case tabular-nums">{fmtDuration(todayMinutes)}</span>
+              </div>
               {todaySessions.length === 0 ? (
-                <p className="px-2 pb-2 text-sm text-muted">No sessions yet today. Your first one is a click away.</p>
+                <p className="pt-1.5 text-[13px] text-muted">No sessions yet.</p>
               ) : (
-                todaySessions.map((s) => (
-                  <div key={s.id} className="flex items-center gap-3 rounded-xl px-2 py-2 text-sm">
-                    <span className="grid size-8 place-items-center rounded-full bg-accent-soft text-accent">
-                      <Clock className="size-4" />
-                    </span>
-                    <span className="flex-1 truncate font-semibold text-fg">{taskTitle(s.taskId) ?? "Focus session"}</span>
-                    <span className="text-muted tabular-nums">
-                      {fmtTime(s.start)} · {s.minutes}m
-                    </span>
-                  </div>
-                ))
+                <div className="mt-1 max-h-40 overflow-y-auto">
+                  {todaySessions.map((s) => (
+                    <div key={s.id} className="flex items-center gap-2.5 py-1.5 text-[13px]">
+                      <Clock className="size-3.5 shrink-0 text-accent" />
+                      <span className="flex-1 truncate font-semibold text-fg">{taskTitle(s.taskId) ?? "Focus session"}</span>
+                      <span className="text-muted tabular-nums">
+                        {fmtTime(s.start)} · {s.minutes}m
+                      </span>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </Card>
 
           <Card>
             <CardHeader title="Timer" />
-            <div className="px-5 pb-4">
-              <TimerSettingsForm />
+            <div className="px-4 pb-3">
+              <TimerSettingsForm collapsible />
               {settings.notifications && notifPermission === "default" && (
-                <Button
-                  variant="soft"
-                  size="sm"
-                  className="mt-2 w-full"
+                <button
+                  type="button"
+                  className="mt-1 flex items-center gap-1.5 text-[12px] font-semibold text-accent"
                   onClick={async () => {
                     const r = await requestNotificationPermission();
                     if (r === "denied") updateSettings({ notifications: false });
                     rerender((n) => n + 1);
                   }}
                 >
-                  <Bell className="size-4" /> Notify me when the tab is in the background
-                </Button>
+                  <Bell className="size-3.5" /> Notify me when the tab is in the background
+                </button>
               )}
             </div>
           </Card>
