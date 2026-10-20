@@ -19,7 +19,7 @@ function ToolButton({ active, label, onClick, children }: { active?: boolean; la
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       className={cn(
-        "grid size-7 place-items-center rounded-md transition-colors [&_svg]:size-[15px]",
+        "grid size-[26px] shrink-0 place-items-center rounded-md transition-colors [&_svg]:size-[15px]",
         active ? "bg-accent-soft text-accent" : "text-muted hover:bg-surface-3 hover:text-fg",
       )}
     >
@@ -82,14 +82,14 @@ function Toolbar({ editor }: { editor: Editor }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-0.5 border-b border-line px-1.5 py-1">
+    <div className="flex items-center justify-between gap-px border-b border-line px-1 py-1 sm:justify-start sm:gap-0.5 sm:px-1.5">
       <ToolButton label="Bold" active={s.bold} onClick={() => editor.chain().focus().toggleBold().run()}><Bold /></ToolButton>
       <ToolButton label="Italic" active={s.italic} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic /></ToolButton>
       <ToolButton label="Underline" active={s.underline} onClick={() => editor.chain().focus().toggleUnderline().run()}><Underline /></ToolButton>
       <ToolButton label="Strikethrough" active={s.strike} onClick={() => editor.chain().focus().toggleStrike().run()}><Strikethrough /></ToolButton>
       <ToolButton label="Highlight" active={s.highlight} onClick={() => editor.chain().focus().toggleHighlight().run()}><Highlighter /></ToolButton>
       <ToolButton label="Inline code" active={s.code} onClick={() => editor.chain().focus().toggleCode().run()}><Code /></ToolButton>
-      <span className="mx-0.5 h-4 w-px bg-line" />
+      <span className="mx-0.5 h-4 w-px shrink-0 bg-line" />
       <ToolButton label="Bulleted list" active={s.bullet} onClick={() => editor.chain().focus().toggleBulletList().run()}><List /></ToolButton>
       <ToolButton label="Numbered list" active={s.ordered} onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered /></ToolButton>
       <ToolButton label="Checklist" active={s.task} onClick={() => editor.chain().focus().toggleTaskList().run()}><ListTodo /></ToolButton>
@@ -137,7 +137,7 @@ export function RichText({
       Highlight,
     ],
     content: notesToHtml(value),
-    editorProps: { attributes: { class: "prose-editor prose-mini" } },
+    editorProps: { attributes: { class: "prose-editor !pb-0 min-h-16 text-[15px] leading-relaxed" } },
     onUpdate: ({ editor: e }) => onChange(e.isEmpty ? "" : e.getHTML()),
   });
 
@@ -149,7 +149,7 @@ export function RichText({
       )}
     >
       {editor && <Toolbar editor={editor} />}
-      <EditorContent editor={editor} className="px-3 py-2" />
+      <EditorContent editor={editor} className="px-2.5 py-1.5 sm:px-3 sm:py-2" />
     </div>
   );
 }

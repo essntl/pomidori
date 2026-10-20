@@ -52,6 +52,35 @@ let activeSource: SourceKind | null = null;
 let poll: ReturnType<typeof setInterval> | null = null;
 let lastAnnounced: string | null = null;
 
+/*
+ * Whether the user wants music playing. Some players (notably YouTube's mobile player) pause
+ * themselves when the page is hidden; a pause we didn't ask for is undone automatically.
+ */
+let wantsPlayback = false;
+let resumeTries = 0;
+let resumeTimer: ReturnType<typeof setTimeout> | null = null;
+
+function resumeIfInterrupted() {
+  if (!wantsPlayback || resumeTimer || resumeTries >= 4) return;
+  resumeTimer = setTimeout(() => {
+    resumeTimer = null;
+    const t = currentTrack();
+    const s = playerRuntime.get().status;
+    if (!wantsPlayback || !t || s === "playing" || s === "buffering") return;
+    resumeTries++;
+    adapterFor(t.source).play();
+  }, 300);
+}
+
+if (typeof document !== "undefined") {
+  // Coming back to the tab: pick up again if something paused us while we were away.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    resumeTries = 0;
+    if (wantsPlayback && playerRuntime.get().status === "paused") resumeIfInterrupted();
+  });
+}
+
 function setRuntime(patch: Partial<PlayerRuntime>) {
   playerRuntime.set((r) => ({ ...r, ...patch }));
 }
@@ -71,6 +100,7 @@ function eventsFor(source: SourceKind): AdapterEvents {
       if (activeSource !== source) return;
       setRuntime({ status: state, error: state === "playing" ? null : playerRuntime.get().error });
       if (state === "playing") {
+        resumeTries = 0;
         startPolling();
         const t = currentTrack();
         if (t && lastAnnounced !== t.id) {
@@ -82,6 +112,7 @@ function eventsFor(source: SourceKind): AdapterEvents {
         handleEnded();
       } else if (state === "paused") {
         sample();
+        resumeIfInterrupted();
       }
       updateMediaSession();
     },
@@ -100,6 +131,7 @@ function eventsFor(source: SourceKind): AdapterEvents {
     },
     onError(message) {
       if (activeSource !== source) return;
+      wantsPlayback = false;
       setRuntime({ error: message, status: "paused" });
       notify({ title: "Can't play this", body: message, icon: "⚠️", tone: "danger", duration: 4000 });
     },
@@ -144,6 +176,8 @@ function loadIndex(index: number, autoplay: boolean) {
   playerStore.set((p) => ({ ...p, index }));
   if (activeSource && activeSource !== track.source) adapters[activeSource]?.stop();
   activeSource = track.source;
+  wantsPlayback = autoplay;
+  resumeTries = 0;
   setRuntime({ position: 0, duration: 0, loaded: true, error: null, status: autoplay ? "buffering" : "paused" });
   adapterFor(track.source).load(track, autoplay);
   updateMediaSession();
@@ -173,6 +207,7 @@ function handleEnded() {
   }
   const n = nextIndex(1);
   if (n === null) {
+    wantsPlayback = false;
     setRuntime({ status: "paused", position: 0 });
     return;
   }
@@ -195,7 +230,7 @@ function updateMediaSession() {
     album: "Pomidori",
     artwork: t.artwork ? [{ src: t.artwork, sizes: "480x360" }] : [],
   });
-  navigator.mediaSession.playbackState = status === "playing" ? "playing" : "paused";
+  navigator.mediaSession.playbackState = status === "playing" || wantsPlayback ? "playing" : "paused";
 }
 
 let mediaSessionBound = false;
@@ -333,9 +368,12 @@ export const player = {
       loadIndex(playerStore.get().index, true);
       return;
     }
+    wantsPlayback = true;
+    resumeTries = 0;
     adapterFor(t.source).play();
   },
   pause() {
+    wantsPlayback = false;
     if (activeSource) adapters[activeSource]?.pause();
   },
   toggle() {
@@ -386,6 +424,7 @@ export const player = {
       const wasPlaying = playerRuntime.get().status === "playing";
       if (queueNext.length && wasPlaying) loadIndex(newIndex, true);
       else {
+        wantsPlayback = false;
         if (activeSource) adapters[activeSource]?.stop();
         setRuntime({ status: "unstarted", loaded: false, position: 0, duration: 0 });
       }
@@ -400,6 +439,7 @@ export const player = {
     });
   },
   clear() {
+    wantsPlayback = false;
     if (activeSource) adapters[activeSource]?.stop();
     playerStore.set((p) => ({ ...p, queue: [], index: 0 }));
     setRuntime({ status: "unstarted", loaded: false, position: 0, duration: 0, error: null });

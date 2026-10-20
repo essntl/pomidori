@@ -175,7 +175,7 @@ export function TaskRow({
             transition={spring.smooth}
             className="overflow-hidden"
           >
-            <div className="flex flex-col gap-3 pr-3 pb-3 pl-12">
+            <div className="flex flex-col gap-3 pr-2.5 pb-3 pl-2.5 sm:pr-3 sm:pl-12">
               <div>
                 <div className="mb-1 text-[11px] font-bold tracking-wider text-muted uppercase">
                   Subtasks {task.subtasks.length > 0 && `· ${subDone}/${task.subtasks.length}`}

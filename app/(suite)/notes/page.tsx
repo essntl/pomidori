@@ -181,17 +181,17 @@ export default function NotesPage() {
   const words = page && wordCount?.id === page.id ? wordCount.n : null;
 
   return (
-    <div className="grid grid-cols-1 gap-3 md:h-[calc(100dvh-10.75rem)] md:min-h-[460px] md:grid-cols-[256px_minmax(0,1fr)]">
+    <div className="grid h-[calc(100dvh-10rem)] min-h-[420px] grid-cols-1 gap-3 md:h-[calc(100dvh-10.75rem)] md:min-h-[460px] md:grid-cols-[256px_minmax(0,1fr)]">
       <NotesSidebar
         tree={tree}
         roots={roots}
         onNewPage={(o) => newPage({ folderId: o?.folderId ?? null })}
         onImport={importFile}
-        className={cn("h-[calc(100dvh-10rem)] md:h-full", page && "max-md:hidden")}
+        className={cn("h-full min-h-0", page && "max-md:hidden")}
       />
 
       {/* Editor */}
-      <Card className={cn("min-h-[60dvh] min-w-0 md:h-full md:min-h-0 md:overflow-y-auto", !page && "max-md:hidden")}>
+      <Card className={cn("h-full min-h-0 min-w-0 overflow-y-auto overscroll-contain", !page && "max-md:hidden")}>
         <AnimatePresence mode="wait" initial={false}>
           {page ? (
             <motion.div
@@ -313,7 +313,7 @@ export default function NotesPage() {
               )}
             </motion.div>
           ) : (
-            <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid h-full min-h-[50dvh] place-items-center">
+            <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid h-full place-items-center">
               <EmptyState
                 icon={<NotebookPen />}
                 title={pages.length ? "Pick a page" : "Your notes live here"}

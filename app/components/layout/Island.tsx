@@ -92,8 +92,9 @@ export default function Island() {
     };
   }, [expanded]);
 
+  // Top edge matches the 44px header buttons (header padding + 2px), so the compact pill lines up with them.
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-3 z-[60] flex justify-center px-3 sm:top-4">
+    <div className="pointer-events-none fixed inset-x-0 top-[14px] z-[60] flex justify-center px-3 sm:top-[18px]">
       <AnimatePresence>
         {mode !== "hidden" && (
           <motion.div
@@ -134,10 +135,10 @@ export default function Island() {
               )}
 
               {mode === "compact" && (
-                <motion.div key="compact" {...content} className="flex h-9 items-center gap-2.5 px-2.5">
+                <motion.div key="compact" {...content} className="flex h-11 items-center gap-2.5 px-3">
                   {showTimer && (
                     <div className="flex items-center gap-2">
-                      <Ring progress={timer.progress} size={20} stroke={3} color={phaseColor} />
+                      <Ring progress={timer.progress} size={22} stroke={3} color={phaseColor} />
                       <span className="hidden text-[12px] font-bold text-white/60 sm:inline">{PHASE_META[timer.phase].short}</span>
                       <Rolling value={fmtClock(timer.remaining)} className={cn("text-[14px] font-bold", timer.status === "paused" && "text-white/50")} />
                     </div>
@@ -145,7 +146,7 @@ export default function Island() {
                   {showTimer && showMusic && <span className="h-4 w-px bg-white/15" />}
                   {showMusic && (
                     <div className="flex min-w-0 items-center gap-2">
-                      <Artwork track={p.track} className="size-6 rounded-md" />
+                      <Artwork track={p.track} className="size-7 rounded-lg" />
                       {!showTimer && <span className="max-w-[110px] truncate sm:max-w-[160px] text-[13px] font-semibold">{p.track!.title}</span>}
                       <Equalizer playing={p.status === "playing"} className="text-[var(--accent)]" />
                     </div>
