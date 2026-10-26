@@ -56,8 +56,8 @@ function SilenceAlerts() {
       if (isApplyingRemote()) return;
       notify(
         dnd
-          ? { title: "Silence on", body: "Chimes and notifications are muted", icon: "🔕", tone: "info", duration: 2200 }
-          : { title: "Silence off", body: "Chimes and notifications are back", icon: "🔔", tone: "accent", duration: 2200 },
+          ? { title: "Silence on", body: "Chimes and notifications are muted", icon: "🔕", tone: "info", duration: 2200, key: "silence" }
+          : { title: "Silence off", body: "Chimes and notifications are back", icon: "🔔", tone: "accent", duration: 2200, key: "silence" },
       );
     });
   }, []);

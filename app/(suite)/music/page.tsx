@@ -46,6 +46,7 @@ import { Segmented } from "@/app/components/ui/Segmented";
 import { Equalizer } from "@/app/components/ui/Rolling";
 import { useIntent } from "@/app/lib/intents";
 import { QuickDelete } from "@/app/components/ui/QuickDelete";
+import { notify } from "@/app/lib/alerts";
 import { YouTubeCheck } from "@/app/components/music/YouTubeCheck";
 
 const SOURCE_DOT: Record<Track["source"], string> = {
@@ -123,6 +124,29 @@ function QueueItem({
         />
       </div>
     </Reorder.Item>
+  );
+}
+
+const REPEAT_LABEL = { off: "Repeat off", all: "Repeat queue", one: "Repeat this song" } as const;
+
+/** Shuffle / repeat: a filled accent circle when on, so the state reads at a glance. */
+function ModeToggle({ label, active, onClick, children }: { label: string; active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <motion.button
+      type="button"
+      aria-label={label}
+      aria-pressed={active}
+      title={label}
+      whileTap={{ scale: 0.88 }}
+      transition={spring.snappy}
+      onClick={onClick}
+      className={cn(
+        "grid size-10 place-items-center rounded-full transition-[background-color,color,box-shadow] duration-200 [&_svg]:size-[18px]",
+        active ? "bg-accent text-white shadow-[0_6px_16px_-6px_var(--accent)]" : "text-muted hover:bg-surface-2 hover:text-fg",
+      )}
+    >
+      {children}
+    </motion.button>
   );
 }
 
@@ -204,9 +228,16 @@ export default function MusicPage() {
               </div>
 
               <div className="mt-3 flex items-center justify-between">
-                <IconButton label="Shuffle" onClick={player.toggleShuffle} className={cn(p.shuffle && "text-accent")}>
+                <ModeToggle
+                  label={p.shuffle ? "Shuffle on" : "Shuffle off"}
+                  active={p.shuffle}
+                  onClick={() => {
+                    player.toggleShuffle();
+                    notify({ title: p.shuffle ? "Shuffle off" : "Shuffle on", icon: "🔀", tone: "info", duration: 1400, key: "play-mode" });
+                  }}
+                >
                   <Shuffle />
-                </IconButton>
+                </ModeToggle>
                 <IconButton label="Previous" size="lg" onClick={player.prev} disabled={!p.queue.length}>
                   <SkipBack fill="currentColor" />
                 </IconButton>
@@ -230,9 +261,17 @@ export default function MusicPage() {
                 <IconButton label="Next" size="lg" onClick={player.next} disabled={!p.queue.length}>
                   <SkipForward fill="currentColor" />
                 </IconButton>
-                <IconButton label={`Repeat: ${p.repeat}`} onClick={player.cycleRepeat} className={cn(p.repeat !== "off" && "text-accent")}>
+                <ModeToggle
+                  label={REPEAT_LABEL[p.repeat]}
+                  active={p.repeat !== "off"}
+                  onClick={() => {
+                    player.cycleRepeat();
+                    const next = p.repeat === "off" ? "all" : p.repeat === "all" ? "one" : "off";
+                    notify({ title: REPEAT_LABEL[next], icon: next === "one" ? "🔂" : "🔁", tone: "info", duration: 1400, key: "play-mode" });
+                  }}
+                >
                   <RepeatIcon />
-                </IconButton>
+                </ModeToggle>
               </div>
 
               <div className="mt-3 flex items-center gap-3 text-muted">
