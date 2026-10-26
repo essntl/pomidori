@@ -8,9 +8,9 @@ export const notesUIStore = createStore<{ selectedId: string | null; expanded: R
 });
 
 /** One-shot requests from elsewhere in the app (e.g. command palette → "new event"). */
-export const intentStore = createMemoryStore<{ newEvent: boolean; newHabit: boolean }>({ newEvent: false, newHabit: false });
+export const intentStore = createMemoryStore<{ newEvent: boolean; newHabit: boolean; youtubeCheck: boolean }>({ newEvent: false, newHabit: false, youtubeCheck: false });
 
-type IntentKey = "newEvent" | "newHabit";
+type IntentKey = "newEvent" | "newHabit" | "youtubeCheck";
 
 /** Run `onFire` once whenever the intent is raised (on mount, or later while mounted). */
 export function useIntent(key: IntentKey, onFire: () => void) {

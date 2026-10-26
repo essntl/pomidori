@@ -44,7 +44,9 @@ import { NowPlayingArt } from "@/app/components/music/NowPlayingArt";
 import { PlaylistsPanel } from "@/app/components/music/PlaylistsPanel";
 import { Segmented } from "@/app/components/ui/Segmented";
 import { Equalizer } from "@/app/components/ui/Rolling";
+import { useIntent } from "@/app/lib/intents";
 import { QuickDelete } from "@/app/components/ui/QuickDelete";
+import { YouTubeCheck } from "@/app/components/music/YouTubeCheck";
 
 const SOURCE_DOT: Record<Track["source"], string> = {
   youtube: "#ef4444",
@@ -134,6 +136,8 @@ export default function MusicPage() {
   const [nameDialog, setNameDialog] = useState<{ mode: "new" | "save" | "rename"; id?: string; track?: Track } | null>(null);
   const [plName, setPlName] = useState("");
   const music = useSettings().music;
+  const [ytCheck, setYtCheck] = useState(false);
+  useIntent("youtubeCheck", () => setYtCheck(true));
 
   const askName = (req: { mode: "new" | "save" | "rename"; id?: string; initial?: string; track?: Track }) => {
     setPlName(req.initial ?? "");
@@ -237,7 +241,16 @@ export default function MusicPage() {
                 </button>
                 <Slider label="Volume" value={p.volume} onChange={player.setVolume} className="flex-1" />
               </div>
-              {p.error && <p className="mt-3 rounded-xl bg-danger/10 px-3 py-2 text-[13px] font-semibold text-danger">{p.error}</p>}
+              {p.error && (
+                <div className="mt-3 rounded-xl bg-danger/10 px-3 py-2 text-[13px] font-semibold text-danger">
+                  <p>{p.error}</p>
+                  {p.track?.source === "youtube" && (
+                    <button type="button" onClick={() => setYtCheck(true)} className="mt-1 font-bold underline underline-offset-2 hover:text-fg">
+                      Run a YouTube check
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </Card>
 
@@ -383,6 +396,12 @@ export default function MusicPage() {
           {nameDialog?.track && <p className="mt-2 text-xs text-muted">Starts with “{nameDialog.track.title}”.</p>}
         </form>
       </Modal>
+      <YouTubeCheck
+        open={ytCheck}
+        onClose={() => setYtCheck(false)}
+        songId={p.track?.source === "youtube" ? p.track.ref : null}
+        songTitle={p.track?.source === "youtube" ? p.track.title : undefined}
+      />
     </div>
   );
 }

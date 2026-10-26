@@ -221,6 +221,17 @@ export default function CommandPalette() {
         run: () => updateSettings({ theme: document.documentElement.classList.contains("dark") ? "light" : "dark" }),
       },
       {
+        id: "youtube-check",
+        group: "Music",
+        label: "Check YouTube playback",
+        icon: <ListMusic />,
+        keywords: "youtube error 150 153 diagnose test not playing",
+        run: () => {
+          intentStore.set((s) => ({ ...s, youtubeCheck: true }));
+          router.push("/music");
+        },
+      },
+      {
         id: "dnd",
         group: "Settings",
         label: settingsStore.get().dnd ? "Turn off silence mode" : "Silence sounds & notifications",
