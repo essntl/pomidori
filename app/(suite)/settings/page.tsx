@@ -86,21 +86,23 @@ export default function SettingsPage() {
         <Card>
           <CardHeader title="Music player" icon={<Music />} />
           <div className="px-4 pb-1.5">
-            <div className="flex items-center gap-4 py-2.5">
-              <NowPlayingArt track={p.track} playing={p.playing || s.music.artworkStyle === "vinyl"} variant={s.music.artworkStyle} className="w-20 shrink-0" />
-              <div className="min-w-0 flex-1">
-                <div className="mb-1.5 text-[14px] font-semibold text-fg">Artwork style</div>
-                <Segmented<ArtworkStyle>
-                  value={s.music.artworkStyle}
-                  onChange={(artworkStyle) => updateMusicSettings({ artworkStyle })}
-                  options={[
-                    { value: "square", label: <><Square /> Square</> },
-                    { value: "round", label: <><Circle /> Round</> },
-                    { value: "vinyl", label: <><Disc3 /> Vinyl</> },
-                  ]}
-                />
-                <p className="mt-1.5 text-[12px] text-muted">Vinyl spins while music plays, in the player and the Dynamic Island.</p>
+            {/* Phones: preview and text side by side, the style switch full width underneath. */}
+            <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 py-2.5">
+              <NowPlayingArt track={p.track} playing={p.playing || s.music.artworkStyle === "vinyl"} variant={s.music.artworkStyle} className="w-16 shrink-0 sm:row-span-2 sm:w-20" />
+              <div className="min-w-0">
+                <div className="text-[14px] font-semibold text-fg">Artwork style</div>
+                <p className="mt-0.5 text-[12px] text-muted">Vinyl spins while music plays, in the player and the Dynamic Island.</p>
               </div>
+              <Segmented<ArtworkStyle>
+                value={s.music.artworkStyle}
+                onChange={(artworkStyle) => updateMusicSettings({ artworkStyle })}
+                className="col-span-2 w-full sm:col-span-1 sm:col-start-2 sm:w-auto sm:justify-self-start"
+                options={[
+                  { value: "square", label: <><Square /> Square</> },
+                  { value: "round", label: <><Circle /> Round</> },
+                  { value: "vinyl", label: <><Disc3 /> Vinyl</> },
+                ]}
+              />
             </div>
             <div className="divide-y divide-line border-t border-line">
               <Row label="Blurred artwork background" hint="Soft glow of the cover behind the player">
@@ -172,12 +174,13 @@ export default function SettingsPage() {
                 ? "Export a backup to keep a copy you control, or to move to a server without sync."
                 : "Notes, tasks, events, habits, focus history and music queues never leave this browser unless you turn on sync. Export a backup to move them to another device."}
             </p>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="secondary" onClick={exportAll}>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+              <Button variant="secondary" onClick={exportAll} className="w-full sm:w-auto">
                 <Download className="size-4" /> Export backup
               </Button>
               <Button
                 variant="secondary"
+                className="w-full sm:w-auto"
                 onClick={async () => {
                   const file = await pickTextFile(".json,application/json");
                   if (!file) return;
@@ -191,7 +194,7 @@ export default function SettingsPage() {
               >
                 <Upload className="size-4" /> Import backup
               </Button>
-              <Button variant="danger" onClick={() => setConfirmReset(true)}>
+              <Button variant="danger" onClick={() => setConfirmReset(true)} className="col-span-2 w-full sm:w-auto">
                 <RotateCcw className="size-4" /> Reset everything
               </Button>
             </div>

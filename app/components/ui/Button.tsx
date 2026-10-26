@@ -25,7 +25,7 @@ const sizes: Record<Size, string> = {
 };
 
 const base =
-  "inline-flex select-none items-center justify-center whitespace-nowrap font-semibold transition-[background-color,color,filter,box-shadow] duration-150 disabled:pointer-events-none disabled:opacity-40";
+  "inline-flex select-none items-center justify-center whitespace-nowrap font-semibold [&_svg]:shrink-0 transition-[background-color,color,filter,box-shadow] duration-150 disabled:pointer-events-none disabled:opacity-40";
 
 export function buttonClass(variant: Variant = "secondary", size: Size = "md", className?: string) {
   return cn(base, variants[variant], sizes[size], className);
