@@ -126,12 +126,84 @@ function Clock() {
   );
 }
 
+/** Swipe-down zone: the top of the screen (the sticky header and a little below it), right half. */
+const SWIPE_ZONE_HEIGHT = 96;
+const SWIPE_OPEN_DISTANCE = 56;
+
+/**
+ * Phones: swiping down from the top-right corner opens the control centre, like HyperOS / iOS.
+ * Taps still reach the header buttons; only a mostly vertical downward drag counts, and that drag
+ * is kept from scrolling the page or triggering pull-to-refresh.
+ */
+function useSwipeDownToOpen(open: boolean) {
+  const openRef = useRef(open);
+  useEffect(() => {
+    openRef.current = open;
+  });
+
+  useEffect(() => {
+    let start: { x: number; y: number } | null = null;
+    let tracking = false;
+    const mobile = window.matchMedia("(max-width: 767px)");
+
+    function onStart(e: TouchEvent) {
+      start = null;
+      tracking = false;
+      if (openRef.current || !mobile.matches || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      if (t.clientY > SWIPE_ZONE_HEIGHT || t.clientX < window.innerWidth / 2) return;
+      // Another overlay (modal, palette) has locked the page.
+      if (document.body.style.overflow === "hidden") return;
+      start = { x: t.clientX, y: t.clientY };
+    }
+
+    function onMove(e: TouchEvent) {
+      if (!start) return;
+      const t = e.touches[0];
+      const dx = t.clientX - start.x;
+      const dy = t.clientY - start.y;
+      if (!tracking) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        // Sideways or upward: not ours, let the page handle it.
+        if (dy <= 0 || Math.abs(dx) > dy) {
+          start = null;
+          return;
+        }
+        tracking = true;
+      }
+      if (e.cancelable) e.preventDefault();
+      if (dy >= SWIPE_OPEN_DISTANCE) {
+        start = null;
+        tracking = false;
+        ui.openControlCenter();
+      }
+    }
+
+    function onEnd() {
+      start = null;
+      tracking = false;
+    }
+
+    window.addEventListener("touchstart", onStart, { passive: true });
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onEnd, { passive: true });
+    window.addEventListener("touchcancel", onEnd, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", onStart);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+      window.removeEventListener("touchcancel", onEnd);
+    };
+  }, []);
+}
+
 /** HyperOS-style control centre: media, volume sliders, toggles and app tiles. */
 export default function ControlCenter() {
   const { controlCenter: open } = useUI();
   const panel = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   useOverlayBehavior(open, ui.closeControlCenter, panel);
+  useSwipeDownToOpen(open);
 
   const p = usePlayer();
   const ambient = useAmbient();
