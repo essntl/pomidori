@@ -11,7 +11,7 @@ import { eventsStore, occurrencesInRange } from "@/app/lib/stores/events";
 import { habitsStore, isScheduled, toggleHabitDay } from "@/app/lib/stores/habits";
 import { notesStore, createPage } from "@/app/lib/stores/notes";
 import { sessionsStore } from "@/app/lib/stores/sessions";
-import { notesUIStore } from "@/app/lib/intents";
+import { notesUIStore, requestOpenTask } from "@/app/lib/intents";
 import { player } from "@/app/lib/player/controller";
 import { useHotkey, usePlayer } from "@/app/context/hooks";
 import { dashboardStore, getLayout, resetLayout, type WidgetLayout } from "@/app/lib/stores/dashboard";
@@ -138,7 +138,16 @@ export default function Dashboard() {
                 {dueTasks.slice(0, rows).map((t) => (
                   <motion.li layout transition={spring.smooth} key={t.id} className="flex items-center gap-3 rounded-xl px-2 py-2">
                     <TaskCheck task={t} size={20} />
-                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-fg">{t.title}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        requestOpenTask(t.id);
+                        router.push("/tasks");
+                      }}
+                      className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-fg hover:text-accent"
+                    >
+                      {t.title}
+                    </button>
                     {t.due! < today && <span className="text-[11px] font-bold text-danger">Overdue</span>}
                     <QuickDelete size="sm" label="Delete task" onDelete={() => quickDeleteTask(t.id)} />
                   </motion.li>
@@ -342,7 +351,16 @@ export default function Dashboard() {
                 {upcoming.slice(0, rows).map((t) => (
                   <motion.li layout transition={spring.smooth} key={t.id} className="flex items-center gap-3 rounded-xl px-2 py-1.5">
                     <TaskCheck task={t} size={18} />
-                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-fg">{t.title}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        requestOpenTask(t.id);
+                        router.push("/tasks");
+                      }}
+                      className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-fg hover:text-accent"
+                    >
+                      {t.title}
+                    </button>
                     <span className="shrink-0 text-[11px] font-bold text-muted">{t.due ? relativeDay(t.due) : "Someday"}</span>
                     <QuickDelete size="sm" label="Delete task" onDelete={() => quickDeleteTask(t.id)} />
                   </motion.li>

@@ -1,4 +1,5 @@
 import { STORAGE_PREFIX, flushStores, reloadAllStores } from "./storage";
+import { disconnect } from "./sync/engine";
 
 /** Download any text as a file. */
 export function downloadText(filename: string, text: string, type = "text/plain") {
@@ -48,6 +49,8 @@ export function importAll(text: string) {
 }
 
 export function resetAll() {
+  // Leave sync first, so wiping this browser doesn't delete everything on the other devices too.
+  disconnect();
   flushStores();
   const keys: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {

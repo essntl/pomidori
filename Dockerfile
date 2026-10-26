@@ -1,6 +1,6 @@
 # Pomidori — self-hosted image.
-# All user data lives in the visitor's browser (localStorage), so the container is stateless:
-# no volumes or database are needed.
+# User data lives in each visitor's browser. The container itself is stateless; optional
+# cross-device sync stores end-to-end encrypted data in Postgres (see docker-compose.yml).
 
 FROM node:22-alpine AS deps
 WORKDIR /app

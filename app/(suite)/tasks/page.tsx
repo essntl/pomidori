@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, Reorder, motion, useDragControls } from "framer-motion";
-import { CalendarDays, CalendarClock, CheckCheck, ChevronDown, Inbox, List as ListIcon, MoreHorizontal, Pencil, Plus, Sparkles, SquareCheckBig, Sun, Trash2 } from "lucide-react";
+import { CalendarDays, ChevronDown, Inbox, Layers, MoreHorizontal, Pencil, Plus, Sparkles, SquareCheckBig, Trash2 } from "lucide-react";
 import { createMemoryStore, useHydrated, useStore } from "@/app/lib/storage";
 import { notify } from "@/app/lib/alerts";
+import { openTaskStore } from "@/app/lib/intents";
 import {
   INBOX_ID,
   addList,
@@ -24,12 +25,11 @@ import { Card, EmptyState, PageHeader } from "@/app/components/ui/Card";
 import { Button, IconButton } from "@/app/components/ui/Button";
 import { Input } from "@/app/components/ui/Field";
 import { Menu } from "@/app/components/ui/Menu";
-import { Segmented } from "@/app/components/ui/Segmented";
 import { Modal } from "@/app/components/ui/Modal";
 import { DragGrip, PRIORITY_COLOR, TaskRow } from "@/app/components/tasks/TaskRow";
 import { TaskDetail } from "@/app/components/tasks/TaskDetail";
 
-type View = "today" | "upcoming" | "completed" | `list:${string}`;
+type View = "all" | `list:${string}`;
 
 /** Which sidebar list a task is currently being dragged over (to move it there on drop). */
 const dropTargetStore = createMemoryStore<string | null>(null);
@@ -73,81 +73,106 @@ function ReorderItem({ task, children }: { task: Task; children: (grip: React.Re
   );
 }
 
+type Section = { id: string; label: string; tone?: "danger" | "accent"; tasks: Task[]; byDay?: boolean; reorder?: boolean };
+
 export default function TasksPage() {
   const hydrated = useHydrated();
   const { lists, tasks } = useStore(tasksStore);
   const dropTarget = useStore(dropTargetStore);
-  const [view, setView] = useState<View>("today");
+  const [view, setView] = useState<View>("all");
+  const [showCompleted, setShowCompleted] = useState(false);
   const [input, setInput] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [listModal, setListModal] = useState<{ id: string | null; name: string } | null>(null);
+
+  // Opened from search or the home page: show the task in its own list and open its editor.
+  useEffect(() => {
+    const check = () => {
+      const id = openTaskStore.get().id;
+      if (!id) return;
+      openTaskStore.set({ id: null });
+      const t = tasksStore.get().tasks.find((x) => x.id === id);
+      if (!t) return;
+      setView(`list:${t.listId}`);
+      if (t.done) setShowCompleted(true);
+      setOpenId(t.id);
+    };
+    check();
+    return openTaskStore.subscribe(check);
+  }, []);
 
   const today = dayKey();
   const listById = useMemo(() => new Map(lists.map((l) => [l.id, l])), [lists]);
   const activeListId = view.startsWith("list:") ? view.slice(5) : null;
   const activeList = activeListId ? listById.get(activeListId) : undefined;
+  const openCount = (listId?: string) => tasks.filter((t) => !t.done && (!listId || t.listId === listId)).length;
+  const dueNow = (listId?: string) => tasks.filter((t) => !t.done && t.due && t.due <= today && (!listId || t.listId === listId)).length;
 
-  const counts = {
-    today: tasks.filter((t) => !t.done && t.due && t.due <= today).length,
-    upcoming: tasks.filter((t) => !t.done && t.due && t.due > today).length,
-    completed: tasks.filter((t) => t.done).length,
-  };
-
-  const visible = useMemo(() => {
-    if (view === "today") return tasks.filter((t) => !t.done && t.due && t.due <= today).sort((a, b) => b.priority - a.priority);
-    if (view === "upcoming") return tasks.filter((t) => !t.done && t.due && t.due > today).sort((a, b) => a.due!.localeCompare(b.due!));
-    if (view === "completed") return tasks.filter((t) => t.done).sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0));
-    return tasks.filter((t) => !t.done && t.listId === activeListId);
-  }, [tasks, view, today, activeListId]);
+  // One view per list (or all lists), always split by when things are due.
+  const { sections, completed } = useMemo(() => {
+    const scope = activeListId ? tasks.filter((t) => t.listId === activeListId) : tasks;
+    const open = scope.filter((t) => !t.done);
+    const byPriority = (a: Task, b: Task) => b.priority - a.priority;
+    const out: Section[] = [
+      { id: "overdue", label: "Overdue", tone: "danger", tasks: open.filter((t) => t.due && t.due < today).sort((a, b) => a.due!.localeCompare(b.due!) || byPriority(a, b)) },
+      { id: "today", label: "Today", tone: "accent", tasks: open.filter((t) => t.due === today).sort(byPriority) },
+      { id: "upcoming", label: "Upcoming", tasks: open.filter((t) => t.due && t.due > today).sort((a, b) => a.due!.localeCompare(b.due!) || byPriority(a, b)), byDay: true },
+      // Undated tasks keep their manual order and can be dragged.
+      { id: "anytime", label: "Anytime", tasks: open.filter((t) => !t.due), reorder: true },
+    ];
+    return {
+      sections: out.filter((x) => x.tasks.length),
+      completed: scope.filter((t) => t.done).sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0)),
+    };
+  }, [tasks, today, activeListId]);
 
   const parsed = input.trim() ? parseQuickAdd(input, lists) : null;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!parsed || !parsed.title) return;
-    addTask({
-      title: parsed.title,
-      priority: parsed.priority,
-      due: parsed.due ?? (view === "today" ? today : null),
-      listId: parsed.listId ?? activeListId ?? INBOX_ID,
-    });
+    addTask({ title: parsed.title, priority: parsed.priority, due: parsed.due ?? null, listId: parsed.listId ?? activeListId ?? INBOX_ID });
     setInput("");
   }
 
   const openTask = tasks.find((t) => t.id === openId) ?? null;
-
-  const navItems: { id: View; label: string; icon: React.ReactNode; count?: number }[] = [
-    { id: "today", label: "Today", icon: <Sun />, count: counts.today },
-    { id: "upcoming", label: "Upcoming", icon: <CalendarClock />, count: counts.upcoming },
-    { id: "completed", label: "Completed", icon: <CheckCheck /> },
-  ];
-
-  const title = view === "today" ? "Today" : view === "upcoming" ? "Upcoming" : view === "completed" ? "Completed" : activeList?.name ?? "List";
-
-  const grouped = useMemo(() => {
-    if (view !== "upcoming") return null;
-    const map = new Map<string, Task[]>();
-    for (const t of visible) map.set(t.due!, [...(map.get(t.due!) ?? []), t]);
-    return [...map.entries()];
-  }, [view, visible]);
+  const title = activeList?.name ?? "All tasks";
+  const showList = !activeListId;
+  const row = (t: Task, grip?: React.ReactNode) => (
+    <TaskRow task={t} list={listById.get(t.listId)} lists={lists} showList={showList} dragHandle={grip} onOpen={() => setOpenId(t.id)} />
+  );
+  const plainRows = (items: Task[]) => (
+    <AnimatePresence initial={false}>
+      {items.map((t) => (
+        <motion.div
+          key={t.id}
+          layout
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, x: -12, transition: { duration: 0.15 } }}
+          transition={spring.smooth}
+        >
+          {row(t)}
+        </motion.div>
+      ))}
+    </AnimatePresence>
+  );
 
   return (
     <div>
       <PageHeader title="Tasks" subtitle="Capture everything. Do what matters today." />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_minmax(0,1fr)]">
         <Card className="self-start p-2 max-md:hidden">
-          <nav className="flex gap-1 overflow-x-auto md:flex-col">
-            {navItems.map((n) => (
-              <NavButton key={n.id} active={view === n.id} onClick={() => setView(n.id)} icon={n.icon} label={n.label} count={n.count} />
-            ))}
+          <nav className="flex flex-col gap-1">
+            <NavButton active={view === "all"} onClick={() => setView("all")} icon={<Layers />} label="All tasks" count={openCount()} due={dueNow()} />
           </nav>
-          <div className="mt-2 flex items-center justify-between px-3 pt-2 pb-1 text-[11px] font-bold tracking-wider text-muted uppercase max-md:hidden">
+          <div className="mt-2 flex items-center justify-between px-3 pt-2 pb-1 text-[11px] font-bold tracking-wider text-muted uppercase">
             Lists
             <IconButton size="sm" label="New list" className="-mr-2 size-6" onClick={() => setListModal({ id: null, name: "" })}>
               <Plus />
             </IconButton>
           </div>
-          <nav className="flex gap-1 overflow-x-auto md:flex-col max-md:mt-1">
+          <nav className="flex flex-col gap-1">
             {lists.map((l) => (
               <NavButton
                 key={l.id}
@@ -157,54 +182,35 @@ export default function TasksPage() {
                 onClick={() => setView(`list:${l.id}`)}
                 icon={l.id === INBOX_ID ? <Inbox /> : <span className="size-2.5 rounded-full" style={{ background: l.color }} />}
                 label={l.name}
-                count={tasks.filter((t) => !t.done && t.listId === l.id).length}
+                count={openCount(l.id)}
+                due={dueNow(l.id)}
               />
             ))}
-            <button
-              type="button"
-              onClick={() => setListModal({ id: null, name: "" })}
-              className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-muted hover:bg-surface-2 md:hidden"
-            >
-              <Plus className="size-4" /> List
-            </button>
           </nav>
         </Card>
 
-        {/* Phones: one compact row instead of the sidebar. */}
-        <div className="flex items-center gap-2 md:hidden">
-          <Segmented<View>
-            value={view}
-            onChange={setView}
-            className="min-w-0 flex-1"
-            options={[
-              { value: "today", label: <>Today{counts.today > 0 && <span className="text-[11px] text-muted tabular-nums">{counts.today}</span>}</> },
-              { value: "upcoming", label: "Upcoming" },
-              { value: "completed", label: "Done" },
-            ]}
-          />
+        {/* Phones: a list picker instead of the sidebar. */}
+        <div className="md:hidden">
           <Menu
+            align="start"
             trigger={(t) => (
-              <button
-                type="button"
-                className={cn(
-                  "flex h-10 max-w-36 shrink-0 items-center gap-1.5 rounded-control px-3 text-[13px] font-semibold transition-colors",
-                  activeList ? "bg-accent-soft text-accent" : "bg-surface-2 text-fg-2",
-                )}
-                {...t}
-              >
+              <button type="button" className="flex h-11 w-full items-center gap-2 rounded-control bg-surface-2 px-3.5 text-[14px] font-semibold text-fg" {...t}>
                 {activeList ? (
-                  activeList.id === INBOX_ID ? <Inbox className="size-4 shrink-0" /> : <span className="size-2.5 shrink-0 rounded-full" style={{ background: activeList.color }} />
+                  activeList.id === INBOX_ID ? <Inbox className="size-4 shrink-0 text-muted" /> : <span className="size-2.5 shrink-0 rounded-full" style={{ background: activeList.color }} />
                 ) : (
-                  <ListIcon className="size-4 shrink-0" />
+                  <Layers className="size-4 shrink-0 text-muted" />
                 )}
-                <span className="truncate">{activeList?.name ?? "Lists"}</span>
-                <ChevronDown className="size-3.5 shrink-0 opacity-70" />
+                <span className="flex-1 truncate text-left">{title}</span>
+                <span className="text-[12px] text-muted tabular-nums">{openCount(activeListId ?? undefined)}</span>
+                <ChevronDown className="size-4 shrink-0 text-muted" />
               </button>
             )}
             items={[
+              { label: "All tasks", hint: String(openCount() || ""), icon: <Layers />, onSelect: () => setView("all") },
+              "separator",
               ...lists.map((l) => ({
                 label: l.name,
-                hint: String(tasks.filter((t) => !t.done && t.listId === l.id).length || ""),
+                hint: String(openCount(l.id) || ""),
                 icon: l.id === INBOX_ID ? <Inbox /> : <span className="size-2.5 rounded-full" style={{ background: l.color }} />,
                 onSelect: () => setView(`list:${l.id}`),
               })),
@@ -215,8 +221,8 @@ export default function TasksPage() {
         </div>
 
         <Card className="min-w-0 p-3 sm:p-4">
-          <div className="mb-3 flex items-center justify-between px-1">
-            <h2 className="text-xl font-extrabold tracking-tight text-fg">{title}</h2>
+          <div className="mb-3 flex items-center justify-between gap-2 px-1">
+            <h2 className="truncate text-xl font-extrabold tracking-tight text-fg">{title}</h2>
             {activeList && activeList.id !== INBOX_ID && (
               <Menu
                 trigger={(t) => (
@@ -240,95 +246,95 @@ export default function TasksPage() {
             )}
           </div>
 
-          {view !== "completed" && (
-            <form onSubmit={submit} className="mb-2">
-              <div className="flex items-center gap-2 rounded-2xl border border-line bg-surface-2 py-1.5 pr-1.5 pl-4 focus-within:border-accent/50 focus-within:ring-4 focus-within:ring-accent/10">
-                <Plus className="size-5 shrink-0 text-muted" />
-                <input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Add a task — try “Call mom tomorrow !high”"
-                  className="h-9 min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-muted"
-                  aria-label="New task"
-                />
-                <Button type="submit" variant="primary" size="sm" disabled={!parsed?.title}>
-                  Add
-                </Button>
-              </div>
-              <AnimatePresence>
-                {parsed && (parsed.due || parsed.priority > 0 || parsed.listId) && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={spring.snappy}
-                    className="flex gap-2 overflow-hidden px-2 pt-2 text-[12px] font-bold"
-                  >
-                    <Sparkles className="size-4 text-accent" />
-                    {parsed.due && (
-                      <span className="flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-accent">
-                        <CalendarDays className="size-3" /> {relativeDay(parsed.due)}
-                      </span>
-                    )}
-                    {parsed.priority > 0 && (
-                      <span className="rounded-full px-2 py-0.5" style={{ color: PRIORITY_COLOR[parsed.priority], background: `color-mix(in oklab, ${PRIORITY_COLOR[parsed.priority]} 14%, transparent)` }}>
-                        {["", "Low", "Medium", "High"][parsed.priority]} priority
-                      </span>
-                    )}
-                    {parsed.listId && <span className="rounded-full bg-surface-3 px-2 py-0.5 text-fg-2">#{listById.get(parsed.listId)?.name}</span>}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </form>
-          )}
-
-          {!hydrated ? null : visible.length === 0 ? (
-            <EmptyState
-              icon={view === "completed" ? <CheckCheck /> : <SquareCheckBig />}
-              title={view === "today" ? "Nothing due today" : view === "completed" ? "Nothing completed yet" : view === "upcoming" ? "Nothing scheduled" : "This list is empty"}
-              hint={view === "completed" ? "Checked-off tasks will show up here." : "Add a task above. Dates like “friday” or “tomorrow” are understood."}
-            />
-          ) : grouped ? (
-            <div className="flex flex-col gap-3">
-              {grouped.map(([day, items]) => (
-                <div key={day}>
-                  <div className="px-3 pt-2 pb-1 text-[12px] font-bold tracking-wider text-muted uppercase">{relativeDay(day)}</div>
-                  <AnimatePresence initial={false}>
-                    {items.map((t) => (
-                      <motion.div key={t.id} layout exit={{ opacity: 0, x: -12 }} transition={spring.smooth}>
-                        <TaskRow task={t} list={listById.get(t.listId)} lists={lists} showList onOpen={() => setOpenId(t.id)} />
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
-              ))}
+          <form onSubmit={submit} className="mb-2">
+            <div className="flex items-center gap-2 rounded-2xl border border-line bg-surface-2 py-1.5 pr-1.5 pl-4 focus-within:border-accent/50 focus-within:ring-4 focus-within:ring-accent/10">
+              <Plus className="size-5 shrink-0 text-muted" />
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={`Add to ${activeList?.name ?? "Inbox"} — try “Call mom tomorrow !high”`}
+                className="h-9 min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-muted"
+                aria-label="New task"
+              />
+              <Button type="submit" variant="primary" size="sm" disabled={!parsed?.title}>
+                Add
+              </Button>
             </div>
-          ) : activeListId ? (
-            <Reorder.Group axis="y" values={visible.map((t) => t.id)} onReorder={reorderTasks} className="flex flex-col">
-              <AnimatePresence initial={false}>
-                {visible.map((t) => (
-                  <ReorderItem key={t.id} task={t}>
-                    {(grip) => <TaskRow task={t} lists={lists} dragHandle={grip} onOpen={() => setOpenId(t.id)} />}
-                  </ReorderItem>
-                ))}
-              </AnimatePresence>
-            </Reorder.Group>
+            <AnimatePresence>
+              {parsed && (parsed.due || parsed.priority > 0 || parsed.listId) && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={spring.snappy}
+                  className="flex gap-2 overflow-hidden px-2 pt-2 text-[12px] font-bold"
+                >
+                  <Sparkles className="size-4 text-accent" />
+                  {parsed.due && (
+                    <span className="flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-accent">
+                      <CalendarDays className="size-3" /> {relativeDay(parsed.due)}
+                    </span>
+                  )}
+                  {parsed.priority > 0 && (
+                    <span className="rounded-full px-2 py-0.5" style={{ color: PRIORITY_COLOR[parsed.priority], background: `color-mix(in oklab, ${PRIORITY_COLOR[parsed.priority]} 14%, transparent)` }}>
+                      {["", "Low", "Medium", "High"][parsed.priority]} priority
+                    </span>
+                  )}
+                  {parsed.listId && <span className="rounded-full bg-surface-3 px-2 py-0.5 text-fg-2">#{listById.get(parsed.listId)?.name}</span>}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </form>
+
+          {!hydrated ? null : sections.length === 0 && completed.length === 0 ? (
+            <EmptyState
+              icon={<SquareCheckBig />}
+              title={activeList ? "This list is empty" : "Nothing to do"}
+              hint="Add a task above. Dates like “friday” or “tomorrow” are understood."
+            />
           ) : (
-            <div className="flex flex-col">
-              <AnimatePresence initial={false}>
-                {visible.map((t) => (
-                  <motion.div
-                    key={t.id}
-                    layout
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: -12, transition: { duration: 0.15 } }}
-                    transition={spring.smooth}
+            <div className="flex flex-col gap-2">
+              {sections.length === 0 && <p className="px-3 py-4 text-sm text-muted">All done here. 🎉</p>}
+              {sections.map((sec) => (
+                <section key={sec.id}>
+                  <SectionHeader label={sec.label} count={sec.tasks.length} tone={sec.tone} />
+                  {sec.byDay ? (
+                    groupByDay(sec.tasks).map(([day, items]) => (
+                      <div key={day}>
+                        <div className="px-3 pt-1.5 pb-0.5 text-[12px] font-semibold text-muted">{relativeDay(day)}</div>
+                        {plainRows(items)}
+                      </div>
+                    ))
+                  ) : sec.reorder ? (
+                    <Reorder.Group axis="y" values={sec.tasks.map((t) => t.id)} onReorder={reorderTasks} className="flex flex-col">
+                      <AnimatePresence initial={false}>
+                        {sec.tasks.map((t) => (
+                          <ReorderItem key={t.id} task={t}>
+                            {(grip) => row(t, grip)}
+                          </ReorderItem>
+                        ))}
+                      </AnimatePresence>
+                    </Reorder.Group>
+                  ) : (
+                    plainRows(sec.tasks)
+                  )}
+                </section>
+              ))}
+
+              {completed.length > 0 && (
+                <section>
+                  <button
+                    type="button"
+                    onClick={() => setShowCompleted((x) => !x)}
+                    aria-expanded={showCompleted}
+                    className="flex w-full items-center gap-1.5 rounded-lg px-3 pt-2 pb-1 text-left text-[12px] font-bold tracking-wider text-muted uppercase hover:text-fg"
                   >
-                    <TaskRow task={t} list={listById.get(t.listId)} lists={lists} showList onOpen={() => setOpenId(t.id)} />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                    <ChevronDown className={cn("size-3.5 transition-transform", !showCompleted && "-rotate-90")} />
+                    Completed <span className="tabular-nums">{completed.length}</span>
+                  </button>
+                  {showCompleted && plainRows(completed)}
+                </section>
+              )}
             </div>
           )}
         </Card>
@@ -377,12 +383,32 @@ export default function TasksPage() {
   );
 }
 
+function groupByDay(items: Task[]) {
+  const map = new Map<string, Task[]>();
+  for (const t of items) map.set(t.due!, [...(map.get(t.due!) ?? []), t]);
+  return [...map.entries()];
+}
+
+function SectionHeader({ label, count, tone }: { label: string; count: number; tone?: "danger" | "accent" }) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-1.5 px-3 pt-2 pb-1 text-[12px] font-bold tracking-wider uppercase",
+        tone === "danger" ? "text-danger" : tone === "accent" ? "text-accent" : "text-muted",
+      )}
+    >
+      {label} <span className="tabular-nums opacity-70">{count}</span>
+    </div>
+  );
+}
+
 function NavButton({
   active,
   onClick,
   icon,
   label,
   count,
+  due,
   dropId,
   dropActive,
 }: {
@@ -391,6 +417,8 @@ function NavButton({
   icon: React.ReactNode;
   label: string;
   count?: number;
+  /** Open tasks due today or overdue, shown as an accent badge. */
+  due?: number;
   /** Lists accept tasks dragged by their grip. */
   dropId?: string;
   dropActive?: boolean;
@@ -409,6 +437,11 @@ function NavButton({
       {active && <motion.span layoutId="tasks-nav" transition={spring.snappy} className="absolute inset-0 rounded-xl bg-surface-3" />}
       <span className={cn("relative grid w-[18px] place-items-center", active ? "text-accent" : "text-muted")}>{icon}</span>
       <span className="relative flex-1 truncate">{label}</span>
+      {!!due && (
+        <span className="relative rounded-full bg-accent-soft px-1.5 text-[11px] font-bold text-accent tabular-nums" title={`${due} due today or overdue`}>
+          {due}
+        </span>
+      )}
       {!!count && <span className="relative text-xs font-bold text-muted tabular-nums">{count}</span>}
     </button>
   );

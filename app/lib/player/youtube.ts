@@ -2,7 +2,8 @@ import type { Adapter, AdapterEvents, Track } from "./types";
 import { playerHost } from "./host";
 
 /* Minimal typings for the YouTube IFrame API surface we use. */
-type YTPlayer = {
+export type YTPlayer = {
+  mute(): void;
   loadVideoById(id: string): void;
   cueVideoById(id: string): void;
   cuePlaylist(opts: { listType: "playlist"; list: string }): void;
@@ -24,6 +25,7 @@ type YTNamespace = {
     opts: {
       width?: string | number;
       height?: string | number;
+      host?: string;
       videoId?: string;
       playerVars?: Record<string, string | number>;
       events?: {
@@ -44,7 +46,7 @@ declare global {
 
 let apiPromise: Promise<YTNamespace> | null = null;
 
-function loadApi(): Promise<YTNamespace> {
+export function loadApi(): Promise<YTNamespace> {
   if (window.YT?.Player) return Promise.resolve(window.YT);
   if (!apiPromise) {
     apiPromise = new Promise((resolve, reject) => {
@@ -71,9 +73,9 @@ function loadApi(): Promise<YTNamespace> {
  * "not allowed" (101/150/152/153) when it's missing. Building the iframe ourselves lets us pin
  * the referrer policy before the first request, whatever the page or a reverse proxy sets.
  */
-const HOSTS = ["https://www.youtube.com", "https://www.youtube-nocookie.com"];
+export const HOSTS = ["https://www.youtube.com", "https://www.youtube-nocookie.com"];
 
-function mountIframe(host: string, extra: Record<string, string> = {}) {
+export function mountIframe(host: string, extra: Record<string, string> = {}) {
   const iframe = document.createElement("iframe");
   iframe.referrerPolicy = "strict-origin-when-cross-origin";
   iframe.allow = "autoplay; encrypted-media; picture-in-picture";
@@ -96,9 +98,9 @@ function mountIframe(host: string, extra: Record<string, string> = {}) {
 }
 
 /** Codes YouTube uses when it refuses to play inside an embed. */
-const EMBED_REFUSED = new Set([101, 150, 152, 153]);
+export const EMBED_REFUSED = new Set([101, 150, 152, 153]);
 
-const ERRORS: Record<number, string> = {
+export const ERRORS: Record<number, string> = {
   2: "That YouTube link looks invalid.",
   5: "YouTube could not play this video here.",
   100: "This YouTube video was removed or is private.",
@@ -169,7 +171,8 @@ export class YouTubeAdapter implements Adapter {
       this.ensure().then((p) => (cur.autoplay ? p.loadVideoById(cur.track.ref) : p.cueVideoById(cur.track.ref)));
       return;
     }
-    this.events.onError(`${ERRORS[code] ?? "YouTube playback error."}${EMBED_REFUSED.has(code) ? ` (code ${code})` : ""}`);
+    const refused = EMBED_REFUSED.has(code);
+    this.events.onError(`${ERRORS[code] ?? "YouTube playback error."}${refused ? ` (code ${code})` : ""}`, refused ? "blocked" : undefined);
   }
 
   private handleState(code: number) {

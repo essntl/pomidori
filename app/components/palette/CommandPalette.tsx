@@ -22,6 +22,8 @@ import {
   StepForward,
   Waves,
   CalendarDays,
+  CheckCheck,
+  Pencil,
 } from "lucide-react";
 import { ui, useHotkey, useUI } from "@/app/context/hooks";
 import { timerActions, timerStore } from "@/app/context/TimerContext";
@@ -36,7 +38,7 @@ import { settingsStore, updateSettings } from "@/app/lib/stores/settings";
 import { player, playerRuntime } from "@/app/lib/player/controller";
 import { detectSource } from "@/app/lib/player/detect";
 import { ambientActions } from "@/app/lib/player/ambient";
-import { intentStore, notesUIStore } from "@/app/lib/intents";
+import { intentStore, notesUIStore, requestOpenTask } from "@/app/lib/intents";
 import { notify } from "@/app/lib/alerts";
 import { fmtDate, relativeDay } from "@/app/lib/date";
 import { cn } from "@/app/lib/cn";
@@ -52,11 +54,15 @@ type Command = {
   icon: ReactNode;
   keywords?: string;
   run: () => void;
+  /** Shift + Enter (or Shift + click): e.g. add a task and open it for editing. */
+  alt?: () => void;
+  altHint?: string;
 };
 
 /** Commands built from the typed text itself always show; a "#List" task goes to the top. */
 const isPinned = (id: string) => id === "add-music" || id.startsWith("quick-task");
-const pinRank = (id: string) => (id === "quick-task-target" ? 3 : id === "add-music" ? 2 : id.startsWith("quick-task") ? -1 : 0);
+const pinRank = (id: string) =>
+  id === "quick-task-target" || id === "quick-task-target-edit" ? 3 : id === "add-music" ? 2 : id.startsWith("quick-task") ? -1 : 0;
 
 /** Subsequence fuzzy match; higher is better, -1 means no match. */
 function score(query: string, text: string) {
@@ -128,21 +134,29 @@ export default function CommandPalette() {
       // Tasks: "#List" in the text targets that list; otherwise offer Inbox plus each other list.
       const parsed = parseQuickAdd(q, tasks.lists);
       const title = parsed.title || q;
-      const addTo = (listId: string | undefined) => () => {
+      const addTo = (listId: string | undefined, edit = false) => () => {
         const target = tasks.lists.find((l) => l.id === listId);
-        addTask({ title, due: parsed.due, priority: parsed.priority, ...(listId ? { listId } : {}) });
+        const task = addTask({ title, due: parsed.due, priority: parsed.priority, ...(listId ? { listId } : {}) });
+        if (edit) {
+          requestOpenTask(task.id);
+          router.push("/tasks");
+          return;
+        }
         notify({ title: target && target.id !== INBOX_ID ? `Task added to ${target.name}` : "Task added", body: title, icon: "✅", tone: "success", duration: 2200 });
       };
+      const withEdit = (listId: string | undefined) => ({ run: addTo(listId), alt: addTo(listId, true), altHint: "⇧↵ add & edit" });
       const extras = [parsed.due && relativeDay(parsed.due), parsed.priority > 0 && ["", "low", "medium", "high"][parsed.priority] + " priority"]
         .filter(Boolean)
         .join(" · ");
       if (parsed.listId) {
         const target = tasks.lists.find((l) => l.id === parsed.listId)!;
-        list.push({ id: "quick-task-target", group: "Create", label: `Add task to ${target.name}: ${title}`, hint: extras || undefined, icon: <ListPlus />, run: addTo(parsed.listId) });
+        list.push({ id: "quick-task-target", group: "Create", label: `Add task to ${target.name}: ${title}`, hint: extras || undefined, icon: <ListPlus />, ...withEdit(parsed.listId) });
+        list.push({ id: "quick-task-target-edit", group: "Create", label: `Add to ${target.name} and edit details`, hint: title, icon: <Pencil />, run: addTo(parsed.listId, true) });
       } else {
-        list.push({ id: "quick-task", group: "Create", label: `Add task: ${title}`, hint: extras || "Inbox", icon: <ListPlus />, run: addTo(undefined) });
+        list.push({ id: "quick-task", group: "Create", label: `Add task: ${title}`, hint: extras || "Inbox", icon: <ListPlus />, ...withEdit(undefined) });
+        list.push({ id: "quick-task-edit", group: "Create", label: "Add task and edit details", hint: title, icon: <Pencil />, run: addTo(undefined, true) });
         for (const l of tasks.lists.filter((l) => l.id !== INBOX_ID).slice(0, 5)) {
-          list.push({ id: `quick-task-${l.id}`, group: "Create", label: `Add task to ${l.name}: ${title}`, hint: extras || undefined, icon: <ListPlus />, run: addTo(l.id) });
+          list.push({ id: `quick-task-${l.id}`, group: "Create", label: `Add task to ${l.name}: ${title}`, hint: extras || undefined, icon: <ListPlus />, ...withEdit(l.id) });
         }
       }
     }
@@ -207,6 +221,17 @@ export default function CommandPalette() {
         run: () => updateSettings({ theme: document.documentElement.classList.contains("dark") ? "light" : "dark" }),
       },
       {
+        id: "youtube-check",
+        group: "Music",
+        label: "Check YouTube playback",
+        icon: <ListMusic />,
+        keywords: "youtube error 150 153 diagnose test not playing",
+        run: () => {
+          intentStore.set((s) => ({ ...s, youtubeCheck: true }));
+          router.push("/music");
+        },
+      },
+      {
         id: "dnd",
         group: "Settings",
         label: settingsStore.get().dnd ? "Turn off silence mode" : "Silence sounds & notifications",
@@ -235,8 +260,20 @@ export default function CommandPalette() {
           },
         });
       }
-      for (const t of tasks.tasks.filter((t) => !t.done)) {
-        list.push({ id: `task-${t.id}`, group: "Tasks", label: t.title, icon: <SquareCheckBig />, run: go("/tasks") });
+      const listName = new Map(tasks.lists.map((l) => [l.id, l.name]));
+      for (const t of tasks.tasks) {
+        list.push({
+          id: `task-${t.id}`,
+          group: "Tasks",
+          label: t.title,
+          hint: [t.done ? "Done" : t.due ? relativeDay(t.due) : null, listName.get(t.listId)].filter(Boolean).join(" · "),
+          icon: t.done ? <CheckCheck /> : <SquareCheckBig />,
+          // Open the task itself, in the list it belongs to.
+          run: () => {
+            requestOpenTask(t.id);
+            router.push("/tasks");
+          },
+        });
       }
       for (const e of events) {
         list.push({ id: `event-${e.id}`, group: "Events", label: e.title, hint: fmtDate(e.start), icon: <CalendarDays />, run: go("/calendar") });
@@ -257,10 +294,10 @@ export default function CommandPalette() {
 
   const safeActive = Math.min(active, Math.max(0, commands.length - 1));
 
-  function run(c: Command | undefined) {
+  function run(c: Command | undefined, alt = false) {
     if (!c) return;
     close();
-    c.run();
+    (alt && c.alt ? c.alt : c.run)();
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
@@ -273,7 +310,7 @@ export default function CommandPalette() {
       listRef.current?.querySelector(`[data-index="${next}"]`)?.scrollIntoView({ block: "nearest" });
     } else if (e.key === "Enter") {
       e.preventDefault();
-      run(commands[safeActive]);
+      run(commands[safeActive], e.shiftKey);
     }
   }
 
@@ -328,7 +365,7 @@ export default function CommandPalette() {
                         type="button"
                         data-index={i}
                         onMouseMove={() => i !== safeActive && setActive(i)}
-                        onClick={() => run(c)}
+                        onClick={(e) => run(c, e.shiftKey)}
                         className={cn(
                           "relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] font-semibold transition-colors [&_svg]:size-[18px]",
                           i === safeActive ? "text-fg" : "text-fg-2",
@@ -339,7 +376,8 @@ export default function CommandPalette() {
                         )}
                         <span className={cn("relative", i === safeActive ? "text-accent" : "text-muted")}>{c.icon}</span>
                         <span className="relative flex-1 truncate">{c.label}</span>
-                        {c.hint && <span className="relative text-xs text-muted">{c.hint}</span>}
+                        {c.hint && <span className="relative max-w-[40%] truncate text-xs text-muted">{c.hint}</span>}
+                        {i === safeActive && c.altHint && <span className="relative hidden text-[11px] font-semibold text-muted sm:inline">{c.altHint}</span>}
                         {i === safeActive && (
                           <span className="relative text-muted">
                             {c.group === "Go to" ? <ArrowRight className="size-4" /> : <CornerDownLeft className="size-4" />}

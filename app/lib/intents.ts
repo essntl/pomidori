@@ -8,9 +8,9 @@ export const notesUIStore = createStore<{ selectedId: string | null; expanded: R
 });
 
 /** One-shot requests from elsewhere in the app (e.g. command palette → "new event"). */
-export const intentStore = createMemoryStore<{ newEvent: boolean; newHabit: boolean }>({ newEvent: false, newHabit: false });
+export const intentStore = createMemoryStore<{ newEvent: boolean; newHabit: boolean; youtubeCheck: boolean }>({ newEvent: false, newHabit: false, youtubeCheck: false });
 
-type IntentKey = "newEvent" | "newHabit";
+type IntentKey = "newEvent" | "newHabit" | "youtubeCheck";
 
 /** Run `onFire` once whenever the intent is raised (on mount, or later while mounted). */
 export function useIntent(key: IntentKey, onFire: () => void) {
@@ -27,4 +27,11 @@ export function useIntent(key: IntentKey, onFire: () => void) {
     check();
     return intentStore.subscribe(check);
   }, [key]);
+}
+
+/** Ask the Tasks page to show a task where it lives and open its editor (from search, home, etc.). */
+export const openTaskStore = createMemoryStore<{ id: string | null }>({ id: null });
+
+export function requestOpenTask(id: string) {
+  openTaskStore.set({ id });
 }
