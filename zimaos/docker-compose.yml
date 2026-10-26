@@ -22,6 +22,8 @@ services:
     depends_on:
       pomidori-db:
         condition: service_healthy
+    networks:
+      - pomidori
     deploy:
       resources:
         reservations:
@@ -53,6 +55,12 @@ services:
       - type: bind
         source: /DATA/AppData/pomidori/db
         target: /var/lib/postgresql/data
+    # Reachable as both "pomidori-db" and "db".
+    hostname: pomidori-db
+    networks:
+      pomidori:
+        aliases:
+          - db
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pomidori -d pomidori"]
       interval: 5s
@@ -67,6 +75,10 @@ services:
         - container: /var/lib/postgresql/data
           description:
             en_us: Encrypted sync data
+
+networks:
+  pomidori:
+    name: pomidori
 
 x-casaos:
   architectures:

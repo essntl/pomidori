@@ -58,12 +58,13 @@ export function Field({
 /** A row in a settings-style list: label on the left, control on the right. */
 export function Row({ label, hint, children }: { label: ReactNode; hint?: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-2.5">
-      <div className="min-w-0">
+    // Wraps the control onto its own line instead of overflowing on very narrow screens.
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2.5">
+      <div className="min-w-0 flex-1 basis-40">
         <div className="text-[14px] font-semibold text-fg">{label}</div>
         {hint && <div className="text-[12px] text-muted">{hint}</div>}
       </div>
-      <div className="shrink-0">{children}</div>
+      <div className="max-w-full shrink-0">{children}</div>
     </div>
   );
 }

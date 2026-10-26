@@ -8,7 +8,7 @@ export default function SuiteLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex min-h-dvh flex-col">
       <Navbar />
-      <main className="mx-auto w-full max-w-7xl flex-1 px-3 pt-3 pb-20 sm:px-5 sm:pt-5">{children}</main>
+      <main className="mx-auto w-full max-w-7xl flex-1 px-3 pt-3 pb-[var(--dock-space)] sm:px-5 sm:pt-5">{children}</main>
       <Dock />
       <ControlCenter />
       <CommandPalette />

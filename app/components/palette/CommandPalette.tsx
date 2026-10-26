@@ -318,7 +318,7 @@ export default function CommandPalette() {
     <Portal>
       <AnimatePresence>
         {open && (
-          <div className="fixed inset-0 z-[75] flex items-start justify-center px-3 pt-[12vh]">
+          <div className="reach-bottom fixed inset-0 z-[75] flex items-start justify-center px-3 pt-[12vh]">
             <motion.div
               className="absolute inset-0 bg-[var(--backdrop)] backdrop-blur-[3px]"
               initial={{ opacity: 0 }}

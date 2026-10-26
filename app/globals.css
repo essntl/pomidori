@@ -6,6 +6,8 @@
 
 :root {
   --bg: #f3f3f6;
+  /* Room kept free at the bottom of every page for the floating dock (see Dock.tsx). */
+  --dock-space: calc(4.75rem + max(0.75rem, env(safe-area-inset-bottom)));
   --bg-glow: #ffffff;
   --surface: rgb(255 255 255 / 0.94);
   --surface-solid: #ffffff;
@@ -294,4 +296,42 @@ input[type="number"] {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
   }
+}
+
+/* Music "now playing" bars (see Equalizer in components/ui/Rolling.tsx). */
+@keyframes eq-bar {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  25% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.45);
+  }
+  75% {
+    transform: scaleY(0.85);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eq-bar {
+    animation: none !important;
+  }
+}
+
+/* Dock hidden in Settings: only keep clear of the phone's home indicator. */
+html[data-dock="off"] {
+  --dock-space: calc(1rem + env(safe-area-inset-bottom));
+}
+
+/*
+ * Firefox for Android leaves fixed elements where they were while its address bar is hidden,
+ * so a strip at the bottom of the screen stays uncovered. ViewportGap (Providers.tsx) measures
+ * that strip into --vv-gap (0 elsewhere) and these elements stretch over it. Kept outside the
+ * Tailwind layers so it wins over inset-0 / bottom-0.
+ */
+.reach-bottom {
+  bottom: calc(0px - var(--vv-gap, 0px));
 }

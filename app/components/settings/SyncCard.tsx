@@ -173,12 +173,12 @@ export function SyncCard() {
               Keep notes, tasks, events, habits, playlists and settings in step on all your devices. Your data is encrypted on this device with a passphrase only you know; the
               server can&apos;t read it. Without a passphrase, everything simply stays in this browser.
             </p>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="primary" onClick={() => open("create")} disabled={!info?.signups}>
+            <div className="grid grid-cols-2 gap-2 sm:flex">
+              <Button variant="primary" onClick={() => open("create")} disabled={!info?.signups} className="w-full sm:w-auto">
                 <Wand2 className="size-4" /> Set up sync
               </Button>
-              <Button variant="secondary" onClick={() => open("join")}>
-                <KeyRound className="size-4" /> I have a passphrase
+              <Button variant="secondary" onClick={() => open("join")} className="w-full sm:w-auto">
+                <KeyRound className="size-4" /> Join sync
               </Button>
             </div>
             {!info?.signups && <p className="mt-2 text-[13px] text-muted">The owner of this server has turned off new sync passphrases. You can still connect with an existing one.</p>}
@@ -213,17 +213,18 @@ export function SyncCard() {
                 <div className="min-w-0 flex-1">
                   <PassphraseBox value={passphrase} hidden={!reveal} />
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => setReveal((r) => !r)} aria-label={reveal ? "Hide passphrase" : "Show passphrase"}>
+                <Button size="sm" variant="ghost" className="shrink-0" onClick={() => setReveal((r) => !r)} aria-label={reveal ? "Hide passphrase" : "Show passphrase"}>
                   {reveal ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </Button>
               </div>
             )}
-            <div className="flex flex-wrap gap-2">
-              <Button variant="secondary" onClick={() => syncNow()} disabled={status.phase === "syncing"}>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+              <Button variant="secondary" onClick={() => syncNow()} disabled={status.phase === "syncing"} className="w-full sm:w-auto">
                 <RefreshCw className={cn("size-4", status.phase === "syncing" && "animate-spin")} /> Sync now
               </Button>
               <Button
                 variant="ghost"
+                className="w-full sm:w-auto"
                 onClick={() => {
                   disconnect();
                   notify({ title: "Sync off on this device", body: "Your data stays here and on your other devices.", icon: "⏸️", tone: "info" });
@@ -231,7 +232,7 @@ export function SyncCard() {
               >
                 <LogOut className="size-4" /> Stop syncing here
               </Button>
-              <Button variant="danger" onClick={() => setDialog("delete")}>
+              <Button variant="danger" onClick={() => setDialog("delete")} className="col-span-2 w-full sm:w-auto">
                 <Trash2 className="size-4" /> Delete synced copy
               </Button>
             </div>

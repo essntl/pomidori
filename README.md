@@ -70,6 +70,8 @@ Pomidori ships as a container image on the GitHub Container Registry: `ghcr.io/e
 | `ALLOW_SIGNUPS` | `true` | Whether new sync passphrases can be created. Set to `false` once your devices are set up; existing passphrases keep working. |
 | `POSTGRES_PASSWORD` | `pomidori` | Database password used by the stack (the database isn't exposed outside it). Set it in a `.env` file next to the compose file. |
 
+If you write `DATABASE_URL` by hand, use the database container's name as the host (`pomidori-db` in the ready-made stacks) and percent-encode special characters in the password (`:` → `%3A`, `@` → `%40`, `/` → `%2F`, `#` → `%23`).
+
 **Docker run** (browser-only, no sync)
 ```bash
 docker run -d --name pomidori -p 3000:3000 --restart unless-stopped ghcr.io/essntl/pomidori:latest

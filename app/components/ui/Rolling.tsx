@@ -1,7 +1,8 @@
 "use client";
 
+import { memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ease, spring } from "@/app/lib/motion";
+import { ease } from "@/app/lib/motion";
 import { cn } from "@/app/lib/cn";
 import { useStore } from "@/app/lib/storage";
 import { settingsStore, type Settings } from "@/app/lib/stores/settings";
@@ -33,27 +34,32 @@ export function Rolling({ value, className }: { value: string; className?: strin
 /** Animated equaliser bars for "now playing". */
 const selectEqualizer = (s: Settings) => s.music.equalizer;
 
-export function Equalizer({ playing: isPlaying, className }: { playing: boolean; className?: string }) {
+const EQ_RESTING = [0.9, 0.5, 0.75, 0.6];
+
+/**
+ * Playing bars. Plain CSS animation rather than framer-motion: inside draggable/layout-animated
+ * rows (the queue) framer's projection resets child transforms, which froze the bars.
+ */
+export const Equalizer = memo(function Equalizer({ playing: isPlaying, className }: { playing: boolean; className?: string }) {
   // Settings → Music player can turn the animation off; bars then sit still.
   const animated = useStore(settingsStore, selectEqualizer);
   const playing = isPlaying && animated;
   return (
     <span className={cn("inline-flex h-3.5 items-end gap-[2px]", className)} aria-hidden>
-      {[0.9, 0.5, 0.75, 0.6].map((h, i) => (
-        <motion.span
+      {EQ_RESTING.map((h, i) => (
+        <span
           key={i}
-          className="h-full w-[3px] origin-bottom rounded-full bg-current"
-          animate={playing ? { scaleY: [0.3, 1, 0.45, 0.85, 0.3] } : { scaleY: h * 0.4 }}
-          transition={
+          className="eq-bar h-full w-[3px] origin-bottom rounded-full bg-current transition-transform duration-300"
+          style={
             playing
-              ? { duration: 0.9 + i * 0.17, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }
-              : spring.smooth
+              ? { animation: `eq-bar ${0.9 + i * 0.17}s ease-in-out ${i * 0.08}s infinite` }
+              : { transform: `scaleY(${h * 0.4})` }
           }
         />
       ))}
     </span>
   );
-}
+});
 
 /** Circular progress ring. */
 export function Ring({

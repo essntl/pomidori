@@ -222,7 +222,7 @@ export default function ControlCenter() {
     <Portal>
       <AnimatePresence>
         {open && (
-          <div className="fixed inset-0 z-[65]">
+          <div className="reach-bottom fixed inset-0 z-[65]">
             <motion.div
               className="absolute inset-0 bg-black/60 backdrop-blur-md"
               initial={{ opacity: 0 }}

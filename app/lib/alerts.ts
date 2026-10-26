@@ -9,7 +9,7 @@ import { uid } from "./id";
 
 export type AlertTone = "accent" | "success" | "info" | "warning" | "danger";
 /** `image` (e.g. album artwork) is shown instead of the emoji `icon` when it loads. */
-export type IslandAlert = { id: string; title: string; body?: string; icon?: string; image?: string | null; tone: AlertTone; duration: number };
+export type IslandAlert = { id: string; title: string; body?: string; icon?: string; image?: string | null; tone: AlertTone; duration: number; key?: string };
 
 let current: IslandAlert | null = null;
 const queue: IslandAlert[] = [];
@@ -31,8 +31,23 @@ function showNext() {
   }
 }
 
-export function notify(alert: { title: string; body?: string; icon?: string; image?: string | null; tone?: AlertTone; duration?: number }) {
-  queue.push({ id: uid(), tone: "accent", duration: 3200, ...alert });
+/**
+ * Show an alert in the Dynamic Island. Alerts with the same `key` replace each other instead of
+ * queueing, so tapping a toggle several times shows only its latest state.
+ */
+export function notify(alert: { title: string; body?: string; icon?: string; image?: string | null; tone?: AlertTone; duration?: number; key?: string }) {
+  const next: IslandAlert = { id: uid(), tone: "accent", duration: 3200, ...alert };
+  if (next.key) {
+    for (let i = queue.length - 1; i >= 0; i--) if (queue[i].key === next.key) queue.splice(i, 1);
+    if (current?.key === next.key) {
+      if (timer) clearTimeout(timer);
+      timer = null;
+      queue.unshift(next);
+      showNext();
+      return;
+    }
+  }
+  queue.push(next);
   if (!current && !timer) showNext();
 }
 

@@ -186,7 +186,7 @@ export default function NotesPage() {
   const words = page && wordCount?.id === page.id ? wordCount.n : null;
 
   return (
-    <div className="grid h-[calc(100dvh-10rem)] min-h-[420px] grid-cols-1 gap-3 md:h-[calc(100dvh-10.75rem)] md:min-h-[460px] md:grid-cols-[256px_minmax(0,1fr)]">
+    <div className="grid h-[calc(100dvh-5rem-var(--dock-space))] min-h-[420px] grid-cols-1 gap-3 md:h-[calc(100dvh-5.75rem-var(--dock-space))] md:min-h-[460px] md:grid-cols-[256px_minmax(0,1fr)]">
       <NotesSidebar
         tree={tree}
         roots={roots}
