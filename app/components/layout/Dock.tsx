@@ -22,7 +22,7 @@ export default function Dock() {
   return (
     <nav
       aria-label="Main"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+      className="reach-bottom pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >
       <div className="glass pointer-events-auto flex items-center gap-1 rounded-[1.6rem] border border-line p-1.5 shadow-pop">
         {NAV.filter((n) => n.dock).map((item) => {

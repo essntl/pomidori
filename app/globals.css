@@ -325,3 +325,13 @@ input[type="number"] {
 html[data-dock="off"] {
   --dock-space: calc(1rem + env(safe-area-inset-bottom));
 }
+
+/*
+ * Firefox for Android leaves fixed elements where they were while its address bar is hidden,
+ * so a strip at the bottom of the screen stays uncovered. ViewportGap (Providers.tsx) measures
+ * that strip into --vv-gap (0 elsewhere) and these elements stretch over it. Kept outside the
+ * Tailwind layers so it wins over inset-0 / bottom-0.
+ */
+.reach-bottom {
+  bottom: calc(0px - var(--vv-gap, 0px));
+}
