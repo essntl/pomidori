@@ -1,6 +1,7 @@
 # Pomidori for ZimaOS / CasaOS.
 # Install: App Store → "+" (Custom Install) → Import → paste this file.
-# Data lives in each visitor's browser, so no AppData volume is required.
+# Includes a Postgres database for optional, end-to-end encrypted sync between devices.
+# Users who don't set a sync passphrase keep everything in their browser only.
 
 name: pomidori
 
@@ -9,13 +10,18 @@ services:
     image: ghcr.io/essntl/pomidori:latest
     container_name: pomidori
     restart: unless-stopped
-    network_mode: bridge
     ports:
       - target: 3000
         published: "3456"
         protocol: tcp
     environment:
       TZ: $TZ
+      DATABASE_URL: postgres://pomidori:pomidori@pomidori-db:5432/pomidori
+      # Allow new sync passphrases. Set to "false" once your devices are set up.
+      ALLOW_SIGNUPS: "true"
+    depends_on:
+      pomidori-db:
+        condition: service_healthy
     deploy:
       resources:
         reservations:
@@ -27,10 +33,40 @@ services:
         - container: TZ
           description:
             en_us: Time zone
+        - container: ALLOW_SIGNUPS
+          description:
+            en_us: Allow new sync passphrases to be created (true/false)
       ports:
         - container: "3000"
           description:
             en_us: Web UI
+
+  pomidori-db:
+    image: postgres:17-alpine
+    container_name: pomidori-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pomidori
+      POSTGRES_PASSWORD: pomidori
+      POSTGRES_DB: pomidori
+    volumes:
+      - type: bind
+        source: /DATA/AppData/pomidori/db
+        target: /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pomidori -d pomidori"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    x-casaos:
+      volumes:
+        - container: /var/lib/postgresql/data
+          description:
+            en_us: Encrypted sync data
 
 x-casaos:
   architectures:
@@ -48,7 +84,8 @@ x-casaos:
     en_us: >-
       A calm, self-hosted productivity suite: Pomodoro focus timer, Notion-style block notes, tasks,
       calendar with .ics import/export, habit tracker, focus stats, and a music player for YouTube,
-      SoundCloud and radio streams. No accounts or database; everything is stored in your browser.
+      SoundCloud and radio streams. Everything is stored in your browser, with optional end-to-end
+      encrypted sync between your devices using a passphrase.
   icon: https://raw.githubusercontent.com/essntl/pomidori/main/public/images/logo.png
   screenshot_link: []
   thumbnail: https://raw.githubusercontent.com/essntl/pomidori/main/public/images/logo.png

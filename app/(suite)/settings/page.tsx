@@ -16,15 +16,19 @@ import { Switch } from "@/app/components/ui/Switch";
 import { Slider } from "@/app/components/ui/Slider";
 import { Modal } from "@/app/components/ui/Modal";
 import { TimerSettingsForm } from "@/app/components/timer/TimerSettingsForm";
+import { SyncCard } from "@/app/components/settings/SyncCard";
+import { syncStatus } from "@/app/lib/sync/engine";
+import { useStore } from "@/app/lib/storage";
 
 export default function SettingsPage() {
   const s = useSettings();
   const p = usePlayer();
   const [confirmReset, setConfirmReset] = useState(false);
+  const synced = useStore(syncStatus).connected;
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title="Settings" subtitle="Everything is stored locally in this browser." />
+      <PageHeader title="Settings" subtitle={synced ? "Stored in this browser and synced, end-to-end encrypted." : "Everything is stored locally in this browser."} />
       <div className="flex flex-col gap-4">
         <Card>
           <CardHeader title="Appearance" icon={<Palette />} />
@@ -158,11 +162,15 @@ export default function SettingsPage() {
           </div>
         </Card>
 
+        <SyncCard />
+
         <Card>
           <CardHeader title="Your data" icon={<Database />} />
           <div className="px-4 pb-4">
             <p className="mb-4 text-sm text-muted">
-              Notes, tasks, events, habits, focus history and music queues never leave this browser. Export a backup to move them to another device.
+              {synced
+                ? "Export a backup to keep a copy you control, or to move to a server without sync."
+                : "Notes, tasks, events, habits, focus history and music queues never leave this browser unless you turn on sync. Export a backup to move them to another device."}
             </p>
             <div className="flex flex-wrap gap-2">
               <Button variant="secondary" onClick={exportAll}>
@@ -218,7 +226,7 @@ export default function SettingsPage() {
           </>
         }
       >
-        <p className="text-sm text-fg-2">This permanently removes every note, task, event, habit, focus session and playlist stored in this browser. Export a backup first if you might need it.</p>
+        <p className="text-sm text-fg-2">This permanently removes every note, task, event, habit, focus session and playlist stored in this browser. Export a backup first if you might need it.{synced && " Sync is turned off on this device first, so your other devices keep their data."}</p>
       </Modal>
     </div>
   );

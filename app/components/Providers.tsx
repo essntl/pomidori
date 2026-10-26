@@ -7,6 +7,7 @@ import { useStore } from "../lib/storage";
 import { settingsStore } from "../lib/stores/settings";
 import { ambientStore } from "../lib/player/ambient";
 import { playerStore } from "../lib/player/controller";
+import { startSync } from "../lib/sync/engine";
 
 /** Applies theme + accent to <html> and follows the OS theme when set to "system". */
 function ThemeSync() {
@@ -40,12 +41,21 @@ function AudioBoot() {
   return null;
 }
 
+/** Cross-device sync; does nothing unless a passphrase was set up on this device. */
+function SyncBoot() {
+  useEffect(() => {
+    startSync();
+  }, []);
+  return null;
+}
+
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <MotionConfig reducedMotion="user">
       <TimerProvider>
         <ThemeSync />
         <AudioBoot />
+        <SyncBoot />
         {children}
       </TimerProvider>
     </MotionConfig>

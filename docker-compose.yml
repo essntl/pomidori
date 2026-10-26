@@ -1,6 +1,9 @@
-# Run Pomidori with: docker compose up -d
+# Pomidori with cross-device sync. Run with: docker compose up -d
 # Then open http://localhost:3000 (change the left-hand port to use another one).
-# No volumes needed: every user's data stays in their own browser.
+#
+# Sync is optional for each user: without a passphrase, data stays in their browser only.
+# Synced data is end-to-end encrypted in the browser; the database only stores ciphertext.
+# Don't want sync at all? Delete the `db` service, `depends_on` and DATABASE_URL.
 
 services:
   pomidori:
@@ -13,3 +16,30 @@ services:
       - "3000:3000"
     environment:
       - TZ=Etc/UTC
+      - DATABASE_URL=postgres://pomidori:${POSTGRES_PASSWORD:-pomidori}@db:5432/pomidori
+      # Allow new sync passphrases to be created. Set to "false" once your devices are set up;
+      # existing passphrases keep working.
+      - ALLOW_SIGNUPS=true
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17-alpine
+    container_name: pomidori-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=pomidori
+      # Only reachable from the pomidori container. Set POSTGRES_PASSWORD in a .env file to change it.
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-pomidori}
+      - POSTGRES_DB=pomidori
+    volumes:
+      - pomidori-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pomidori -d pomidori"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pomidori-db:
