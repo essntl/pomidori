@@ -1,5 +1,6 @@
 import { createStore } from "../storage";
 import { uid } from "../id";
+import { deletedNotice, pushUndo, reinsert, removedItems } from "../undo";
 import { addDays, dayKey, weekdayIndex } from "../date";
 
 export type Priority = 0 | 1 | 2 | 3;
@@ -159,4 +160,15 @@ export function parseQuickAdd(input: string, lists: TaskList[]) {
   });
 
   return { title: title.replace(/\s+/g, " ").trim(), due: due as string | null, priority: priority as Priority, listId };
+}
+
+/** Delete without confirmation; Ctrl/⌘ Z restores the task in its old position. */
+export function quickDeleteTask(id: string) {
+  const before = tasksStore.get().tasks;
+  const task = before.find((t) => t.id === id);
+  if (!task) return;
+  deleteTask(id);
+  const removed = removedItems(before, tasksStore.get().tasks);
+  pushUndo(task.title, () => tasksStore.set((s) => ({ ...s, tasks: reinsert(s.tasks, removed) })));
+  deletedNotice(task.title);
 }

@@ -8,7 +8,7 @@ import {
   addHabit,
   bestStreak,
   currentStreak,
-  deleteHabit,
+  quickDeleteHabit,
   habitsStore,
   isScheduled,
   toggleHabitDay,
@@ -25,6 +25,7 @@ import { Button, IconButton } from "@/app/components/ui/Button";
 import { Field, Input } from "@/app/components/ui/Field";
 import { Menu } from "@/app/components/ui/Menu";
 import { Modal } from "@/app/components/ui/Modal";
+import { QuickDelete } from "@/app/components/ui/QuickDelete";
 
 const HABIT_ICONS = ["💧", "🏃", "📖", "🧘", "💪", "🥗", "😴", "✍️", "🎸", "🧹", "💊", "🌿", "🚭", "📵", "🙏", "🧠"];
 const HABIT_COLORS = ["#ec4899", "#f97316", "#eab308", "#10b981", "#06b6d4", "#3b82f6", "#8b5cf6", "#64748b"];
@@ -190,6 +191,7 @@ export default function HabitsPage() {
                           </div>
                         ))}
                       </div>
+                      <QuickDelete label="Delete habit" onDelete={() => quickDeleteHabit(h.id)} />
                       <Menu
                         trigger={(t) => (
                           <IconButton size="sm" label="Habit options" {...t}>
@@ -198,7 +200,7 @@ export default function HabitsPage() {
                         )}
                         items={[
                           { label: "Edit", icon: <Pencil />, onSelect: () => setDraft({ id: h.id, name: h.name, icon: h.icon, color: h.color, days: h.days }) },
-                          { label: "Delete", icon: <Trash2 />, danger: true, onSelect: () => deleteHabit(h.id) },
+                          { label: "Delete", icon: <Trash2 />, danger: true, onSelect: () => quickDeleteHabit(h.id) },
                         ]}
                       />
                     </div>

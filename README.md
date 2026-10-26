@@ -3,6 +3,7 @@
 Pomidori is a passion project to create a platform for productivity tools like Pomodoro timer, notes, to-do lists, calendar, and more.
 
 ## Features
+-  **Customisable home** — drag widgets to rearrange them, drag a corner to resize, and hide the ones you don't need (press `E` or the grid button). Bigger widgets show more.
 -  **Focus timer** — Pomodoro with short/long breaks, presets, auto-start, skip and +1 min, task linking, tab-title countdown, chimes and background notifications. Timestamp-based, so it stays accurate in background tabs and survives reloads.
 -  **Notion-style notes** — block editor with `/` slash commands, drag handles to reorder blocks, floating format toolbar, to-dos, callouts, tables, code, nested pages, pinning, search and Markdown import/export.
 -  **Tasks** — lists, priorities, due dates, subtasks, drag to reorder and natural quick-add (`Call mom friday !high #home`).
@@ -14,6 +15,7 @@ Pomidori is a passion project to create a platform for productivity tools like P
 -  **Dynamic Island** — live timer and now-playing activity that expands into controls and doubles as the notification system.
 -  **HyperOS-style control centre** — media card, volume sliders, quick toggles and app launcher.
 -  **Command palette** — `Ctrl/Cmd + K` to navigate, search everything, add tasks, paste music links and control the timer.
+-  **Shortcuts** — hold `Shift` to reveal quick-delete buttons on notes, tasks, habits and songs; `Ctrl/Cmd + Z` undoes it. Press `?` for the full list.
 -  Light/dark/auto theme with six accent colours.
 
 ## Your data

@@ -17,6 +17,7 @@ import { spring } from "@/app/lib/motion";
 import { Card } from "../ui/Card";
 import { IconButton } from "../ui/Button";
 import { Menu } from "../ui/Menu";
+import { QuickDelete } from "../ui/QuickDelete";
 import { PAGE_DRAG_TYPE, PageTree, type TreeProps } from "./PageTree";
 
 function hasPageDrag(e: React.DragEvent) {
@@ -239,17 +240,18 @@ export function NotesSidebar({
           ) : (
             <ul className="flex flex-col gap-px">
               {results.map((p) => (
-                <li key={p.id}>
+                <li key={p.id} className="flex items-center gap-1 pr-1">
                   <button
                     type="button"
                     onClick={() => tree.onSelect(p.id)}
-                    className={cn("flex w-full flex-col rounded-lg px-2 py-1.5 text-left hover:bg-surface-2", selectedId === p.id && "bg-surface-3")}
+                    className={cn("flex min-w-0 flex-1 flex-col rounded-lg px-2 py-1.5 text-left hover:bg-surface-2", selectedId === p.id && "bg-surface-3")}
                   >
                     <span className="truncate text-[13.5px] font-semibold text-fg">
                       {p.icon} {p.title || "Untitled"}
                     </span>
                     <span className="truncate text-[11.5px] text-muted">{p.text.trim().slice(0, 70) || "Empty page"}</span>
                   </button>
+                  <QuickDelete size="sm" label="Delete page" onDelete={() => tree.onQuickDelete(p)} />
                 </li>
               ))}
             </ul>
@@ -263,18 +265,19 @@ export function NotesSidebar({
                 </SectionLabel>
                 <ul className="flex flex-col gap-px">
                   {pinned.map((p) => (
-                    <li key={p.id}>
+                    <li key={p.id} className="flex items-center gap-1 pr-1">
                       <button
                         type="button"
                         onClick={() => tree.onSelect(p.id)}
                         className={cn(
-                          "flex h-8 w-full items-center gap-1.5 rounded-lg px-2 text-left text-[13.5px] font-semibold transition-colors",
+                          "flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-lg px-2 text-left text-[13.5px] font-semibold transition-colors",
                           selectedId === p.id ? "bg-surface-3 text-fg" : "text-fg-2 hover:bg-surface-2",
                         )}
                       >
                         <span className="text-[14px]">{p.icon}</span>
                         <span className="truncate">{p.title || "Untitled"}</span>
                       </button>
+                      <QuickDelete size="sm" label="Delete page" onDelete={() => tree.onQuickDelete(p)} />
                     </li>
                   ))}
                 </ul>

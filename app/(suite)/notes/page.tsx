@@ -15,6 +15,7 @@ import {
   isBlankPage,
   movePageToFolder,
   notesStore,
+  quickDeletePage,
   removeTag,
   updatePage,
   type NotePage,
@@ -170,6 +171,10 @@ export default function NotesPage() {
     onPin: (p) => updatePage(p.id, { pinned: !p.pinned }),
     onExport: exportPage,
     onDelete: (p) => setConfirmDelete(p),
+    onQuickDelete: (p) => {
+      if (selectedId === p.id) notesUIStore.set((s) => ({ ...s, selectedId: p.parentId }));
+      quickDeletePage(p.id);
+    },
     onMove: (p, folderId) => movePageToFolder(p.id, folderId),
   };
 
@@ -317,7 +322,7 @@ export default function NotesPage() {
               <EmptyState
                 icon={<NotebookPen />}
                 title={pages.length ? "Pick a page" : "Your notes live here"}
-                hint="Type “/” for headings, to-dos, callouts and tables. Drag pages onto folders in the sidebar to sort them."
+                hint="Type “/” for headings, to-dos, callouts and tables. Drag pages onto folders to sort them. Hold Shift to quick-delete pages."
                 action={
                   <Button variant="primary" onClick={() => newPage()}>
                     <FilePlus className="size-4" /> New page

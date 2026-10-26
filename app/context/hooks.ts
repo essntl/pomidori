@@ -77,3 +77,35 @@ export function useIsDark() {
     () => false,
   );
 }
+
+/** True while Shift is held outside a text field (typing capitals shouldn't reveal delete buttons). */
+const shiftStore = createMemoryStore(false);
+let shiftListening = false;
+
+function isTyping(t: EventTarget | null) {
+  const el = t as HTMLElement | null;
+  return !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+}
+
+function listenForShift() {
+  if (shiftListening || typeof window === "undefined") return;
+  shiftListening = true;
+  const off = () => shiftStore.set(false);
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Shift" && !isTyping(e.target)) shiftStore.set(true);
+  });
+  window.addEventListener("keyup", (e) => {
+    if (e.key === "Shift") off();
+  });
+  // Pointer events report the live modifier state, which catches a Shift released while the tab was hidden.
+  window.addEventListener("pointermove", (e) => {
+    if (!e.shiftKey && shiftStore.get()) off();
+  });
+  window.addEventListener("blur", off);
+  document.addEventListener("visibilitychange", off);
+}
+
+export function useShiftHeld() {
+  useEffect(listenForShift, []);
+  return useStore(shiftStore);
+}

@@ -1,6 +1,7 @@
 import { createMemoryStore, createStore } from "../storage";
 import { uid } from "../id";
 import { notify } from "../alerts";
+import { pushUndo } from "../undo";
 import { settingsStore } from "../stores/settings";
 import type { Adapter, AdapterEvents, AdapterState, SourceKind, Track } from "./types";
 import { artworkSrc, detectSource, fetchOEmbed, youtubeThumb } from "./detect";
@@ -438,6 +439,23 @@ export const player = {
   },
   cycleRepeat() {
     playerStore.set((p) => ({ ...p, repeat: p.repeat === "off" ? "all" : p.repeat === "all" ? "one" : "off" }));
+  },
+  /** Remove without a menu; Ctrl/⌘ Z puts the track back where it was (paused). */
+  quickRemove(id: string) {
+    const { queue } = playerStore.get();
+    const i = queue.findIndex((t) => t.id === id);
+    if (i < 0) return;
+    const track = queue[i];
+    player.remove(id);
+    pushUndo(track.title, () =>
+      playerStore.set((p) => {
+        if (p.queue.some((t) => t.id === track.id)) return p;
+        const at = Math.min(i, p.queue.length);
+        const q = [...p.queue];
+        q.splice(at, 0, track);
+        return { ...p, queue: q, index: p.queue.length && at <= p.index ? p.index + 1 : p.index };
+      }),
+    );
   },
   remove(id: string) {
     const { queue, index } = playerStore.get();

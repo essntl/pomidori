@@ -4,12 +4,13 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CalendarDays, CalendarX, Check, ChevronDown, GripVertical, Inbox, ListChecks, MoreHorizontal, Timer, Trash2 } from "lucide-react";
 import type { Task, TaskList } from "@/app/lib/stores/tasks";
-import { INBOX_ID, deleteTask, toggleTask, updateTask } from "@/app/lib/stores/tasks";
+import { INBOX_ID, quickDeleteTask, toggleTask, updateTask } from "@/app/lib/stores/tasks";
 import { timerActions } from "@/app/context/TimerContext";
 import { addDays, dayKey, relativeDay } from "@/app/lib/date";
 import { htmlToPlain } from "@/app/lib/text";
 import { Menu, type MenuItem } from "../ui/Menu";
 import { RichText } from "../ui/RichText";
+import { QuickDelete } from "../ui/QuickDelete";
 import { Subtasks } from "./Subtasks";
 import { playSound } from "@/app/lib/alerts";
 import { cn } from "@/app/lib/cn";
@@ -83,7 +84,7 @@ export function TaskRow({
     { label: "Due tomorrow", icon: <CalendarDays />, onSelect: () => updateTask(task.id, { due: dayKey(addDays(new Date(), 1)) }) },
     ...(task.due ? [{ label: "Clear due date", icon: <CalendarX />, onSelect: () => updateTask(task.id, { due: null }) }] : []),
     "separator",
-    { label: "Delete", icon: <Trash2 />, danger: true, onSelect: () => deleteTask(task.id) },
+    { label: "Delete", icon: <Trash2 />, danger: true, onSelect: () => quickDeleteTask(task.id) },
   ];
 
   return (
@@ -125,6 +126,7 @@ export function TaskRow({
           )}
         </div>
         <div className="flex shrink-0 items-center" onClick={(e) => e.stopPropagation()}>
+          <QuickDelete label="Delete task" onDelete={() => quickDeleteTask(task.id)} className="mr-0.5" />
           {!task.done && (
             <button
               type="button"
