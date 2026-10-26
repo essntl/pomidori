@@ -61,9 +61,13 @@ let lastAnnounced: string | null = null;
 let wantsPlayback = false;
 let resumeTries = 0;
 let resumeTimer: ReturnType<typeof setTimeout> | null = null;
+/** Retry gaps: quick at first, then patient, so a background tab doesn't burn through its retries in a second. */
+const RESUME_DELAYS = [300, 1000, 2500, 6000, 15000, 30000];
+const MAX_RESUME_TRIES = 20;
 
 function resumeIfInterrupted() {
-  if (!wantsPlayback || resumeTimer || resumeTries >= 4) return;
+  if (!wantsPlayback || resumeTimer || resumeTries >= MAX_RESUME_TRIES) return;
+  const delay = RESUME_DELAYS[Math.min(resumeTries, RESUME_DELAYS.length - 1)];
   resumeTimer = setTimeout(() => {
     resumeTimer = null;
     const t = currentTrack();
@@ -71,7 +75,22 @@ function resumeIfInterrupted() {
     if (!wantsPlayback || !t || s === "playing" || s === "buffering") return;
     resumeTries++;
     adapterFor(t.source).play();
-  }, 300);
+    // If the player stays paused without telling us again, keep trying.
+    setTimeout(() => {
+      if (playerRuntime.get().status === "paused") resumeIfInterrupted();
+    }, 1500);
+  }, delay);
+}
+
+/** Songs in a row that failed to play; reset once something plays. */
+let failedInARow = 0;
+let blockedInARow = 0;
+const MAX_SKIPS = 3;
+
+/** The user asked for music: give unplayable-song skipping a fresh budget. */
+function userStarted() {
+  failedInARow = 0;
+  blockedInARow = 0;
 }
 
 if (typeof document !== "undefined") {
@@ -126,6 +145,8 @@ function eventsFor(source: SourceKind): AdapterEvents {
       setRuntime({ status: state, error: state === "playing" ? null : playerRuntime.get().error });
       if (state === "playing") {
         resumeTries = 0;
+        failedInARow = 0;
+        blockedInARow = 0;
         startPolling();
         const t = currentTrack();
         if (t && lastAnnounced !== t.id) {
@@ -156,11 +177,26 @@ function eventsFor(source: SourceKind): AdapterEvents {
       if (Object.keys(patch).length) patchTrack(t.id, patch);
       updateMediaSession();
     },
-    onError(message) {
+    onError(message, kind) {
       if (activeSource !== source) return;
+      const wanted = wantsPlayback;
+      const failed = currentTrack();
+      failedInARow++;
+      blockedInARow = kind === "blocked" ? blockedInARow + 1 : 0;
+      // Like other players: skip a song that can't play instead of stopping the whole queue.
+      const next = wanted && failedInARow < MAX_SKIPS ? nextIndex(1) : null;
+      if (next !== null && next !== playerStore.get().index) {
+        notify({ title: "Skipped a song that can't play", body: failed?.title, icon: "⏭️", tone: "warning", duration: 2600 });
+        loadIndex(next, true);
+        return;
+      }
       wantsPlayback = false;
-      setRuntime({ error: message, status: "paused" });
-      notify({ title: "Can't play this", body: message, icon: "⚠️", tone: "danger", duration: 4000 });
+      const diagnosis =
+        blockedInARow >= 2
+          ? "YouTube refused several songs in a row. That's usually an ad or privacy blocker hiding which site is playing them: allow this site in your blocker (or try a private window) and press play again."
+          : message;
+      setRuntime({ error: diagnosis, status: "paused" });
+      notify({ title: "Can't play this", body: diagnosis, icon: "⚠️", tone: "danger", duration: 5000 });
     },
   };
 }
@@ -386,13 +422,16 @@ export const player = {
   },
   playIndex(index: number) {
     bindMediaSession();
+    userStarted();
     loadIndex(index, true);
   },
   play() {
     bindMediaSession();
     const t = currentTrack();
     if (!t) return;
-    if (!playerRuntime.get().loaded || activeSource !== t.source) {
+    userStarted();
+    // After an error the player holds nothing playable: load the song again instead of resuming.
+    if (!playerRuntime.get().loaded || activeSource !== t.source || playerRuntime.get().error) {
       loadIndex(playerStore.get().index, true);
       return;
     }
@@ -410,12 +449,14 @@ export const player = {
     else player.play();
   },
   next() {
+    userStarted();
     const a = activeSource ? adapters[activeSource] : null;
     if (a?.next?.()) return;
     const n = nextIndex(1);
     if (n !== null) loadIndex(n, true);
   },
   prev() {
+    userStarted();
     const a = activeSource ? adapters[activeSource] : null;
     if (a && a.getPosition() > 4) {
       a.seek(0);

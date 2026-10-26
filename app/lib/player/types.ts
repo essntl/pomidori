@@ -18,7 +18,8 @@ export type AdapterState = "unstarted" | "playing" | "paused" | "buffering" | "e
 export type AdapterEvents = {
   onState: (state: AdapterState) => void;
   onMeta: (meta: Partial<Pick<Track, "title" | "artist" | "artwork" | "live">>) => void;
-  onError: (message: string) => void;
+  /** `blocked`: the source refused to play here (e.g. YouTube embed restrictions). */
+  onError: (message: string, kind?: "blocked") => void;
 };
 
 export interface Adapter {

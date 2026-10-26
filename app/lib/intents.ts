@@ -28,3 +28,10 @@ export function useIntent(key: IntentKey, onFire: () => void) {
     return intentStore.subscribe(check);
   }, [key]);
 }
+
+/** Ask the Tasks page to show a task where it lives and open its editor (from search, home, etc.). */
+export const openTaskStore = createMemoryStore<{ id: string | null }>({ id: null });
+
+export function requestOpenTask(id: string) {
+  openTaskStore.set({ id });
+}

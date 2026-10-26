@@ -174,6 +174,9 @@ function scan(c: Collection, meta: Meta, t: number, held: SyncStatus["held"]) {
 
 let applying = false;
 
+/** True while changes from another device are being written into the stores. */
+export const isApplyingRemote = () => applying;
+
 function applyToStore(c: Collection, changes: Map<string, { del: boolean; v?: unknown }>) {
   const state = c.store.get();
   const items = c.read(state);

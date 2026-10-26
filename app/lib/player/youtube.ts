@@ -169,7 +169,8 @@ export class YouTubeAdapter implements Adapter {
       this.ensure().then((p) => (cur.autoplay ? p.loadVideoById(cur.track.ref) : p.cueVideoById(cur.track.ref)));
       return;
     }
-    this.events.onError(`${ERRORS[code] ?? "YouTube playback error."}${EMBED_REFUSED.has(code) ? ` (code ${code})` : ""}`);
+    const refused = EMBED_REFUSED.has(code);
+    this.events.onError(`${ERRORS[code] ?? "YouTube playback error."}${refused ? ` (code ${code})` : ""}`, refused ? "blocked" : undefined);
   }
 
   private handleState(code: number) {

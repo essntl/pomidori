@@ -11,6 +11,7 @@ const GROUPS: { title: string; items: { keys: string[]; label: string }[] }[] = 
     title: "Everywhere",
     items: [
       { keys: ["Ctrl", "K"], label: "Command palette" },
+      { keys: ["Shift", "Enter"], label: "In search: add the task and open it for editing" },
       { keys: ["Shift"], label: "Hold to show quick-delete buttons on notes, tasks, habits and songs" },
       { keys: ["Ctrl", "Z"], label: "Undo the last quick delete" },
       { keys: ["?"], label: "Show this list" },
