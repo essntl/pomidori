@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
@@ -12,6 +13,10 @@ import { useSettings } from "@/app/context/hooks";
 export default function Dock() {
   const pathname = usePathname();
   const { showDock } = useSettings();
+  // Pages size themselves around the dock through --dock-space (globals.css).
+  useEffect(() => {
+    document.documentElement.dataset.dock = showDock ? "on" : "off";
+  }, [showDock]);
   if (!showDock) return null;
 
   return (
