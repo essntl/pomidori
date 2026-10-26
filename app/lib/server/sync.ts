@@ -68,13 +68,24 @@ export function json(body: Record<string, unknown>, status = 200) {
 
 export const fail = (error: string, status: number) => json({ error }, status);
 
+/** Plain-language cause for the most common database setup mistakes. */
+function hint(err: unknown) {
+  const e = err as { code?: string; hostname?: string };
+  if (e.code === "ENOTFOUND")
+    return `can't find a database host called "${e.hostname}". Check the host in DATABASE_URL (in the ready-made stacks it's "pomidori-db") and that both containers are on the same Docker network.`;
+  if (e.code === "ECONNREFUSED") return "the database refused the connection. Is it running, and is the port in DATABASE_URL right?";
+  if (e.code === "28P01") return "wrong database user or password in DATABASE_URL (special characters like : @ / # in the password must be percent-encoded).";
+  if (e.code === "3D000") return "the database named in DATABASE_URL doesn't exist.";
+  return "unexpected database error.";
+}
+
 /** Wrap a route so a database outage answers with a clear error instead of a crash page. */
 export function handler(fn: (req: Request) => Promise<Response>) {
   return async (req: Request) => {
     try {
       return await fn(req);
     } catch (err) {
-      console.error("[pomidori] sync request failed", err);
+      console.error(`[pomidori] sync request failed: ${hint(err)}`, err);
       return fail("database", 503);
     }
   };
