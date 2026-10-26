@@ -44,6 +44,7 @@ import { NowPlayingArt } from "@/app/components/music/NowPlayingArt";
 import { PlaylistsPanel } from "@/app/components/music/PlaylistsPanel";
 import { Segmented } from "@/app/components/ui/Segmented";
 import { Equalizer } from "@/app/components/ui/Rolling";
+import { QuickDelete } from "@/app/components/ui/QuickDelete";
 
 const SOURCE_DOT: Record<Track["source"], string> = {
   youtube: "#ef4444",
@@ -104,6 +105,7 @@ function QueueItem({
             {track.artist && <span className="truncate">· {track.artist}</span>}
           </div>
         </div>
+        <QuickDelete label="Remove from queue" onDelete={() => player.quickRemove(track.id)} />
         <Menu
           trigger={(t) => (
             <IconButton size="sm" label="Track options" className="opacity-0 group-hover:opacity-100 aria-expanded:opacity-100 max-md:opacity-100" {...t}>

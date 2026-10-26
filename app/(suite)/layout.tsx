@@ -2,6 +2,7 @@ import Navbar from "../components/layout/Navbar";
 import Dock from "../components/layout/Dock";
 import ControlCenter from "../components/layout/ControlCenter";
 import CommandPalette from "../components/palette/CommandPalette";
+import Shortcuts from "../components/layout/Shortcuts";
 
 export default function SuiteLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export default function SuiteLayout({ children }: { children: React.ReactNode })
       <Dock />
       <ControlCenter />
       <CommandPalette />
+      <Shortcuts />
     </div>
   );
 }

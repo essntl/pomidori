@@ -6,6 +6,7 @@ import type { NoteFolder, NotePage } from "@/app/lib/stores/notes";
 import { cn } from "@/app/lib/cn";
 import { spring } from "@/app/lib/motion";
 import { Menu, type MenuItem } from "../ui/Menu";
+import { QuickDelete } from "../ui/QuickDelete";
 
 /** Deeper pages stop indenting so titles always stay readable inside the sidebar. */
 const MAX_INDENT_DEPTH = 3;
@@ -24,6 +25,8 @@ export type TreeProps = {
   onPin: (page: NotePage) => void;
   onExport: (page: NotePage) => void;
   onDelete: (page: NotePage) => void;
+  /** Delete with no confirmation (Shift + click). */
+  onQuickDelete: (page: NotePage) => void;
   onMove: (page: NotePage, folderId: string | null) => void;
 };
 
@@ -95,6 +98,7 @@ export function PageRow({ page, depth, ...p }: TreeProps & { page: NotePage; dep
             <Plus className="size-4" />
           </button>
         </div>
+        <QuickDelete size="sm" label="Delete page" onDelete={() => p.onQuickDelete(page)} className="relative ml-0.5" />
       </div>
       <AnimatePresence initial={false}>
         {open && children.length > 0 && (

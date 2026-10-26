@@ -1,5 +1,6 @@
 import { createStore } from "../storage";
 import { uid } from "../id";
+import { deletedNotice, pushUndo, reinsert, removedItems } from "../undo";
 import { addDays, dayKey, fromDayKey, weekdayIndex } from "../date";
 
 export type Habit = {
@@ -73,4 +74,15 @@ export function bestStreak(h: Habit) {
     d = addDays(d, 1);
   }
   return best;
+}
+
+/** Delete without confirmation; Ctrl/⌘ Z restores the habit with its history. */
+export function quickDeleteHabit(id: string) {
+  const before = habitsStore.get();
+  const habit = before.find((h) => h.id === id);
+  if (!habit) return;
+  deleteHabit(id);
+  const removed = removedItems(before, habitsStore.get());
+  pushUndo(habit.name, () => habitsStore.set((all) => reinsert(all, removed)));
+  deletedNotice(habit.name);
 }

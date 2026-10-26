@@ -1,6 +1,7 @@
 import type { JSONContent } from "@tiptap/react";
 import { createStore } from "../storage";
 import { uid } from "../id";
+import { deletedNotice, pushUndo, reinsert, removedItems } from "../undo";
 import { markdownToHtml, stripMarkdown } from "../markdown";
 
 export type NotePage = {
@@ -151,4 +152,15 @@ export function allTags(pages: NotePage[]) {
   const counts = new Map<string, number>();
   for (const p of pages) for (const t of p.tags ?? []) counts.set(t, (counts.get(t) ?? 0) + 1);
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+}
+
+/** Delete without confirmation; Ctrl/⌘ Z brings the page (and its sub-pages) back. */
+export function quickDeletePage(id: string) {
+  const before = notesStore.get();
+  const page = before.find((p) => p.id === id);
+  if (!page) return;
+  deletePage(id);
+  const removed = removedItems(before, notesStore.get());
+  pushUndo(page.title || "Untitled", () => notesStore.set((all) => reinsert(all, removed)));
+  deletedNotice(page.title || "Untitled");
 }
