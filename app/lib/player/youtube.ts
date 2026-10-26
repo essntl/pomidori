@@ -66,11 +66,37 @@ function loadApi(): Promise<YTNamespace> {
   return apiPromise;
 }
 
-function mount() {
-  const el = document.createElement("div");
-  playerHost().appendChild(el);
-  return el;
+/**
+ * YouTube requires embeds to identify the site through the HTTP Referer header and answers
+ * "not allowed" (101/150/152/153) when it's missing. Building the iframe ourselves lets us pin
+ * the referrer policy before the first request, whatever the page or a reverse proxy sets.
+ */
+const HOSTS = ["https://www.youtube.com", "https://www.youtube-nocookie.com"];
+
+function mountIframe(host: string, extra: Record<string, string> = {}) {
+  const iframe = document.createElement("iframe");
+  iframe.referrerPolicy = "strict-origin-when-cross-origin";
+  iframe.allow = "autoplay; encrypted-media; picture-in-picture";
+  iframe.width = "200";
+  iframe.height = "200";
+  iframe.title = "YouTube player";
+  const params = new URLSearchParams({
+    enablejsapi: "1",
+    playsinline: "1",
+    controls: "0",
+    disablekb: "1",
+    rel: "0",
+    origin: window.location.origin,
+    widget_referrer: window.location.origin,
+    ...extra,
+  });
+  iframe.src = `${host}/embed/?${params}`;
+  playerHost().appendChild(iframe);
+  return iframe;
 }
+
+/** Codes YouTube uses when it refuses to play inside an embed. */
+const EMBED_REFUSED = new Set([101, 150, 152, 153]);
 
 const ERRORS: Record<number, string> = {
   2: "That YouTube link looks invalid.",
@@ -78,12 +104,17 @@ const ERRORS: Record<number, string> = {
   100: "This YouTube video was removed or is private.",
   101: "The owner does not allow this video to play outside YouTube.",
   150: "The owner does not allow this video to play outside YouTube.",
+  152: "YouTube refused to play this video here.",
+  153: "YouTube blocked the player because it couldn't tell which site it's on. Check that your proxy doesn't strip the Referer header.",
 };
 
 export class YouTubeAdapter implements Adapter {
   private player: YTPlayer | null = null;
   private ready: Promise<YTPlayer> | null = null;
   private volume = 0.7;
+  /** Index into HOSTS; switches when YouTube refuses an embed on one domain. */
+  private host = 0;
+  private current: { track: Track; autoplay: boolean; retried: boolean } | null = null;
 
   constructor(private events: AdapterEvents) {}
 
@@ -92,10 +123,7 @@ export class YouTubeAdapter implements Adapter {
       this.ready = loadApi().then(
         (YT) =>
           new Promise<YTPlayer>((resolve) => {
-            new YT.Player(mount(), {
-              width: 200,
-              height: 200,
-              playerVars: { playsinline: 1, controls: 0, disablekb: 1, rel: 0, origin: window.location.origin },
+            new YT.Player(mountIframe(HOSTS[this.host]), {
               events: {
                 onReady: (e) => {
                   this.player = e.target;
@@ -103,7 +131,7 @@ export class YouTubeAdapter implements Adapter {
                   resolve(e.target);
                 },
                 onStateChange: (e) => this.handleState(e.data),
-                onError: (e) => this.events.onError(ERRORS[e.data] ?? "YouTube playback error."),
+                onError: (e) => this.handleError(e.data),
               },
             });
           }),
@@ -114,6 +142,34 @@ export class YouTubeAdapter implements Adapter {
       });
     }
     return this.ready;
+  }
+
+  /** Throw away the player so the next load builds a fresh one (on the current host). */
+  private reset() {
+    const old = this.player;
+    this.player = null;
+    this.ready = null;
+    try {
+      const iframe = (old as unknown as { getIframe?: () => HTMLIFrameElement })?.getIframe?.();
+      old?.destroy();
+      iframe?.remove();
+    } catch {
+      /* already gone */
+    }
+  }
+
+  private handleError(code: number) {
+    const cur = this.current;
+    // An embed refusal is often about the domain/referrer, not the video: try the other YouTube host once.
+    if (EMBED_REFUSED.has(code) && cur && !cur.retried) {
+      cur.retried = true;
+      this.host = (this.host + 1) % HOSTS.length;
+      this.reset();
+      this.events.onState("buffering");
+      this.ensure().then((p) => (cur.autoplay ? p.loadVideoById(cur.track.ref) : p.cueVideoById(cur.track.ref)));
+      return;
+    }
+    this.events.onError(`${ERRORS[code] ?? "YouTube playback error."}${EMBED_REFUSED.has(code) ? ` (code ${code})` : ""}`);
   }
 
   private handleState(code: number) {
@@ -130,6 +186,7 @@ export class YouTubeAdapter implements Adapter {
   }
 
   load(track: Track, autoplay: boolean) {
+    this.current = { track, autoplay, retried: false };
     if (this.player) {
       if (autoplay) this.player.loadVideoById(track.ref);
       else this.player.cueVideoById(track.ref);
@@ -173,7 +230,7 @@ export class YouTubeAdapter implements Adapter {
 export async function expandYouTubePlaylist(listId: string): Promise<string[]> {
   const YT = await loadApi();
   return new Promise((resolve, reject) => {
-    const el = mount();
+    const el = mountIframe(HOSTS[0], { listType: "playlist", list: listId });
     let player: YTPlayer | null = null;
     const cleanup = () => {
       try {
@@ -188,9 +245,6 @@ export async function expandYouTubePlaylist(listId: string): Promise<string[]> {
       reject(new Error("YouTube playlist took too long to load."));
     }, 15000);
     new YT.Player(el, {
-      width: 200,
-      height: 200,
-      playerVars: { listType: "playlist", list: listId, origin: window.location.origin },
       events: {
         onReady: (e) => {
           player = e.target;

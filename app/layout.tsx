@@ -12,6 +12,8 @@ const nunito = Nunito({
 export const metadata: Metadata = {
   title: "Pomidori",
   description: "Focus timer, notes, tasks, calendar, habits and music — one calm productivity suite that keeps your data in your browser.",
+  // YouTube embeds refuse to play without a Referer; this overrides stricter policies added by proxies.
+  referrer: "strict-origin-when-cross-origin",
 };
 
 export const viewport: Viewport = {
